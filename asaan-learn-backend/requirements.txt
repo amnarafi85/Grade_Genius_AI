@@ -1,0 +1,10 @@
+express
+cors
+dotenv
+ws
+zod
+@supabase/supabase-js
+multer
+openai
+typescript
+nodemon
