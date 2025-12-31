@@ -1,0 +1,135 @@
+/* ===============================================
+   Excel panel styles — Deep Blue + Warm Yellow
+   File: excel-panel.css
+   Matches Auth/Dashboard/Results theme tokens
+   =============================================== */
+
+/* Self-contained theme tokens (remove if already global) */
+:root{
+  --bg: #0b1e3a;              /* deep navy background */
+  --bg-2: #0f274e;            /* darker blend */
+  --card: #0f2a55;            /* card/base surface */
+  --field: #0d2246;           /* input / inset surface */
+  --ink: #eef4ff;             /* primary text */
+  --muted: #b7c6e6;           /* secondary text */
+  --accent: #ffd166;          /* warm yellow (primary) */
+  --accent-2: #ffbf00;        /* deeper yellow (hover) */
+  --border: rgba(255, 255, 255, 0.10);
+  --ring: rgba(255, 209, 102, 0.6);
+
+  --shadow-lg: 0 18px 60px rgba(0, 0, 0, 0.45);
+  --shadow: 0 10px 30px rgba(0,0,0,0.35);
+  --radius: 12px;
+  --radius-lg: 18px;
+}
+
+/* -------- Generic bits -------- */
+.btn{
+  padding:10px 14px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015)),
+    var(--field);
+  color:var(--ink);
+  cursor:pointer;
+  transition:transform .15s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease, filter .12s ease;
+}
+.btn:hover{
+  transform:translateY(-1px);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)),
+    var(--field);
+  box-shadow:0 6px 16px rgba(0,0,0,.22);
+  border-color: color-mix(in oklab, var(--border) 70%, var(--accent));
+}
+.btn:focus-visible{ outline:3px solid var(--ring); outline-offset:2px; }
+.btn:disabled{ opacity:.6; cursor:not-allowed; transform:none; box-shadow:none; }
+
+.btn-primary{
+  background:linear-gradient(180deg, var(--accent), var(--accent-2));
+  border:none;
+  color:#1a1a1a;
+  font-weight:800;
+  box-shadow:0 10px 22px rgba(255, 209, 102, 0.28);
+}
+.btn-primary:hover{ filter: saturate(1.04) brightness(1.02); }
+
+.link{
+  text-decoration:none;
+  font-weight:700;
+  color: color-mix(in oklab, var(--accent-2) 85%, #fff);
+}
+.link:hover{ text-decoration:underline; }
+
+/* -------- Title -------- */
+.xp-title{
+  margin-bottom:12px;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+/* -------- Filter bar -------- */
+.xp-filter{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px 16px;
+  align-items:end;
+  margin:10px 0 16px;
+}
+.xp-filter-group{ display:grid; gap:6px; }
+.xp-label{ font-weight:800; color: var(--muted); }
+
+.xp-select{
+  background: var(--field);
+  color: var(--ink);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:8px 10px;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease, transform .06s ease;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.xp-select:focus{
+  outline:none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--ring), inset 0 1px 0 rgba(255,255,255,0.05);
+  background: color-mix(in oklab, var(--field) 92%, transparent);
+  transform: translateY(-1px);
+}
+.xp-select-course{ min-width:220px; }
+.xp-select-section{ min-width:180px; }
+.xp-select:disabled{ opacity:.6; }
+
+/* -------- Empty / loading -------- */
+.xp-loading{ opacity:.85; color: var(--muted); }
+.xp-empty{ opacity:.8; color: var(--muted); }
+
+/* -------- List & items -------- */
+.xp-list{ display:grid; gap:16px; }
+.xp-item{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)),
+    var(--card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:16px;
+  box-shadow:0 10px 24px rgba(0,0,0,.22);
+  color: var(--ink);
+}
+
+.xp-meta{ margin-bottom:6px; color: var(--muted); }
+
+.xp-actions{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.xp-no-file{ color:var(--muted); }
+
+/* -------- Responsive tweaks -------- */
+@media (max-width:640px){
+  .xp-select-course{ min-width:180px; }
+  .xp-select-section{ min-width:160px; }
+}

@@ -1,0 +1,10 @@
+# Environment files
+.env
+
+# Node modules & builds
+node_modules/
+.expo/
+.expo-shared/
+dist/
+build/
+web-build/
