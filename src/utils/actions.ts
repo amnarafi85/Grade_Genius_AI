@@ -245,7 +245,7 @@ export async function downloadGreenResults(
       return;
     }
 
-    const pdfRes = await fetch(j.url, { credentials: "include" });
+    const pdfRes = await fetch(j.url); // ✅ no credentials for public storage URL
     const fileName = `${baseNameFor(quizId, quizzes)}_green_results.pdf`;
 
     if (!pdfRes.ok) { window.open(j.url, "_blank"); return; }
