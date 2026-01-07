@@ -2,6 +2,13 @@ import { supabase } from "../lib/supabaseClient";
 import type { Quiz, RubricItem, Leniency } from "../types";
 import { baseNameFor } from "./names";
 
+// ✅ NEW: auth header helper (JWT Bearer token)
+async function authHeaders() {
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 // ===== fetch =====
 export async function fetchQuizzesByTeacher(
   teacherId: string,
@@ -21,7 +28,7 @@ export async function fetchQuizzesByTeacher(
 // ===== OCR =====
 export async function processQuiz(
   quizId: string,
-  engine: "vision-pdf" | "tesseract" | "openai-ocr" | "gemini-ocr",
+  engine: "auto" | "vision-pdf" | "images" | "tesseract" | "openai-ocr" | "gemini-ocr",
   setRunning: (s: "none" | "ocr" | "ocr+grade") => void,
   setOcrText: (t: string) => void,
   refetch: () => Promise<void>
@@ -29,7 +36,15 @@ export async function processQuiz(
   setRunning("ocr");
   try {
     setOcrText("⏳ Running OCR…");
-    const r = await fetch(`http://localhost:5000/process-quiz/${quizId}?engine=${engine}`, { method: "POST" });
+
+    const r = await fetch(`http://localhost:5000/process-quiz/${quizId}?engine=${engine}`, {
+      method: "POST",
+      headers: {
+        ...(await authHeaders()),
+      },
+      credentials: "include",
+    });
+
     const j = await r.json();
     if (j.success) { setOcrText("✅ OCR completed"); await refetch(); }
     else setOcrText(`❌ OCR failed: ${j.error}`);
@@ -58,9 +73,14 @@ export async function analyzeQuiz(
   try {
     setGradingResult("🧠 Grading in progress…");
     setPackLinks(null);
+
     const r = await fetch(`http://localhost:5000/analyze-quiz/${quizId}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(await authHeaders()),
+      },
+      credentials: "include",
       body: JSON.stringify({
         gradingMode: options.gradingMode,
         gradingPrompt: options.customPrompt,
@@ -78,7 +98,7 @@ export async function analyzeQuiz(
     try { j = raw ? JSON.parse(raw) : {}; } catch {}
 
     if (r.status === 409) {
-      setGradingResult(`⚠️ ${j.error || "Another grading run is in progress."} Try refreshing or wait for the current run to finish.`);
+      setGradingResult(`⚠️ ${j.error || "No extracted text found. Run OCR (process-quiz) first."}`);
       await refetch();
       return;
     }
@@ -99,7 +119,7 @@ export async function analyzeQuiz(
 export async function processAndGrade(
   quizId: string,
   params: {
-    engine: "vision-pdf" | "tesseract" | "openai-ocr" | "gemini-ocr";
+    engine: "auto" | "vision-pdf" | "images" | "tesseract" | "openai-ocr" | "gemini-ocr";
     gradingMode: "very_easy" | "easy" | "balanced" | "strict" | "hard" | "blind";
     gradingProvider: "openai" | "gemini";
     customPrompt: string;
@@ -140,16 +160,23 @@ export async function exportCsv(
   quizzes: Quiz[],
   refetch: () => Promise<void>
 ) {
-  const r = await fetch(`http://localhost:5000/export-csv/${quizId}`, { method: "POST" });
+  const r = await fetch(`http://localhost:5000/export-csv/${quizId}`, {
+    method: "POST",
+    headers: {
+      ...(await authHeaders()),
+    },
+    credentials: "include",
+  });
+
   const j = await r.json();
   if (j.success) {
     await refetch();
-    const urlFromServer: string | undefined = j.url || j.csv_url || j.results_url;
+    const urlFromServer: string | undefined = j.public_url || j.url || j.csv_url || j.results_url;
     const fileName = `${baseNameFor(quizId, quizzes)}_results.csv`;
 
     if (urlFromServer) {
       try {
-        const csvRes = await fetch(urlFromServer);
+        const csvRes = await fetch(urlFromServer, { credentials: "include" });
         if (!csvRes.ok) {
           window.open(urlFromServer, "_blank");
           return;
@@ -181,7 +208,14 @@ export async function buildPack(
   setPackLinks: (v: Record<string, string> | null) => void,
   downloadGreenResults: (quizId: string) => Promise<void>
 ) {
-  const r = await fetch(`http://localhost:5000/build-graded-pack/${quizId}`, { method: "POST" });
+  const r = await fetch(`http://localhost:5000/build-graded-pack/${quizId}`, {
+    method: "POST",
+    headers: {
+      ...(await authHeaders()),
+    },
+    credentials: "include",
+  });
+
   const j = await r.json();
   if (j.success) {
     setPackLinks(j);
@@ -197,14 +231,23 @@ export async function downloadGreenResults(
   quizzes: Quiz[]
 ) {
   try {
-    const r = await fetch(`http://localhost:5000/build-green-graded/${quizId}`, { method: "POST" });
+    const r = await fetch(`http://localhost:5000/build-green-graded/${quizId}`, {
+      method: "POST",
+      headers: {
+        ...(await authHeaders()),
+      },
+      credentials: "include",
+    });
+
     const j = await r.json();
     if (!j.success || !j.url) {
       alert(`Failed to build green PDF: ${j.error || "Unknown error"}`);
       return;
     }
-    const pdfRes = await fetch(j.url);
+
+    const pdfRes = await fetch(j.url, { credentials: "include" });
     const fileName = `${baseNameFor(quizId, quizzes)}_green_results.pdf`;
+
     if (!pdfRes.ok) { window.open(j.url, "_blank"); return; }
     const blob = await pdfRes.blob();
     const url = URL.createObjectURL(blob);
@@ -227,7 +270,15 @@ export async function downloadSBAW(
 ) {
   try {
     const desiredName = `${baseNameFor(quizId, quizzes)}_SBAW.pdf`;
-    let r = await fetch(`http://localhost:5000/build-sbab/${quizId}`, { method: "POST" });
+
+    let r = await fetch(`http://localhost:5000/build-sbab/${quizId}`, {
+      method: "POST",
+      headers: {
+        ...(await authHeaders()),
+      },
+      credentials: "include",
+    });
+
     let contentType = r.headers.get("content-type") || "";
     let j: any = null;
 
@@ -239,7 +290,7 @@ export async function downloadSBAW(
 
     if (j?.success && (j?.sbab_pdf || j?.url)) {
       const fileUrl = j.sbab_pdf || j.url;
-      const pdfRes = await fetch(fileUrl);
+      const pdfRes = await fetch(fileUrl, { credentials: "include" });
       if (!pdfRes.ok) { window.open(fileUrl, "_blank"); return; }
       const blob = await pdfRes.blob();
       const url = URL.createObjectURL(blob);
@@ -251,7 +302,14 @@ export async function downloadSBAW(
     }
 
     // fallback to /build-sbaw
-    r = await fetch(`http://localhost:5000/build-sbaw/${quizId}`, { method: "POST" });
+    r = await fetch(`http://localhost:5000/build-sbaw/${quizId}`, {
+      method: "POST",
+      headers: {
+        ...(await authHeaders()),
+      },
+      credentials: "include",
+    });
+
     contentType = r.headers.get("content-type") || "";
     j = null;
 
@@ -277,7 +335,7 @@ export async function downloadSBAW(
     const urlFromServer = j?.sbaw_pdf || j?.sbab_pdf || j?.url;
     if (!urlFromServer) { alert(`Failed to build SBAW: ${j?.error || "Unknown error"}`); return; }
 
-    const pdfRes = await fetch(urlFromServer);
+    const pdfRes = await fetch(urlFromServer, { credentials: "include" });
     if (!pdfRes.ok) { window.open(urlFromServer, "_blank"); return; }
     const blob = await pdfRes.blob();
     const url = URL.createObjectURL(blob);

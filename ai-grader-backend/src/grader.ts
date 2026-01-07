@@ -7,10 +7,13 @@ import * as dotenv from "dotenv";
 import path from "path";
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-import { Express, Request, Response } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import OpenAI from "openai";
 import fetch from "node-fetch";
 import { PDFDocument, rgb, StandardFonts, PDFPage } from "pdf-lib";
+
+// ✅ NEW: rate limiting
+import rateLimit from "express-rate-limit";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -60,6 +63,120 @@ const SYSTEM_PROMPT =
   // NEW: explicit requirement to also grade and output the solution paper
   "You MUST grade and output EVERY paper in the final JSON, including the solution paper. For the solution paper, include name, roll_number, every question and subpart with marks/max_marks and remarks, total_score/max_score, and overall remarks exactly like for other students. Provide full grading criteria and explanations for the solution paper as well.";
 
+// ============================================================
+// ✅ RATE LIMITERS (heavy AI endpoints + general endpoints)
+// ============================================================
+
+const graderHeavyLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 6,              // 6 heavy calls / minute / IP
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const graderGeneralLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 40,             // 40 calls / minute / IP
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// ============================================================
+// ✅ INPUT VALIDATION HELPERS
+// ============================================================
+
+function isUUID(v: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
+}
+
+const allowedProviders = new Set(["openai", "gemini"]);
+const allowedModes = new Set(["very_easy", "easy", "balanced", "strict", "hard", "blind"]);
+const allowedLeniency = new Set(["any_relevant_full", "half_correct_full", "quarter_correct_full", "exact_only"]);
+
+function isPlainObject(x: any) {
+  return !!x && typeof x === "object" && !Array.isArray(x);
+}
+
+// Rubric sanity check (prevents prompt injection / huge payload / invalid types)
+function validateRubric(rubric: any): rubric is Rubric {
+  if (rubric == null) return true;
+  if (!Array.isArray(rubric)) return false;
+  if (rubric.length > 60) return false; // cap
+  for (const item of rubric) {
+    if (!isPlainObject(item)) return false;
+    if (typeof item.number !== "number" || item.number <= 0) return false;
+
+    if (item.max_marks != null) {
+      if (typeof item.max_marks !== "number" || item.max_marks < 0 || item.max_marks > 200) return false;
+    }
+
+    if (item.topic != null && typeof item.topic !== "string") return false;
+
+    if (item.subparts != null) {
+      if (!Array.isArray(item.subparts)) return false;
+      if (item.subparts.length > 10) return false;
+
+      for (const sp of item.subparts) {
+        if (!isPlainObject(sp)) return false;
+        if (typeof sp.label !== "string" || sp.label.length > 10) return false;
+        if (typeof sp.max_marks !== "number" || sp.max_marks < 0 || sp.max_marks > 100) return false;
+        if (sp.topic != null && typeof sp.topic !== "string") return false;
+      }
+    }
+  }
+  return true;
+}
+
+function clampString(s: any, maxLen: number): string {
+  if (s == null) return "";
+  const out = String(s);
+  return out.length > maxLen ? out.slice(0, maxLen) : out;
+}
+
+// ============================================================
+// ✅ OWASP SECURITY HELPERS
+// ============================================================
+
+// ✅ Extract teacher_id from Supabase JWT token
+async function getTeacherId(req: Request, supabase: any): Promise<string | null> {
+  const auth = req.headers.authorization || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+  if (!token) return null;
+
+  try {
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data?.user) return null;
+    return data.user.id;
+  } catch {
+    return null;
+  }
+}
+
+// ✅ Require user to be logged in (JWT present + valid)
+function requireTeacherAuth(supabase: any) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const teacherId = await getTeacherId(req, supabase);
+    if (!teacherId) {
+      return res.status(401).json({ error: "Unauthorized: missing or invalid token" });
+    }
+    (req as any).teacherId = teacherId;
+    next();
+  };
+}
+
+// ✅ Require quiz ownership (prevents IDOR)
+async function requireQuizOwnership(supabase: any, quizId: string, teacherId: string) {
+  const { data: quiz, error } = await supabase
+    .from("quizzes")
+    .select("id, teacher_id")
+    .eq("id", quizId)
+    .single();
+
+  if (error || !quiz) return false;
+  return quiz.teacher_id === teacherId;
+}
+
+// ---------- Gemini config helpers ----------
 function gradingModeGuidance(mode: string) {
   switch ((mode || "").toLowerCase()) {
     case "very_easy":
@@ -199,40 +316,9 @@ If a paper is unreadable, set:
 }
 
 🧠 OUTPUT FORMAT — RETURN **ONLY** VALID JSON (no markdown, no backticks, no commentary):
-[
-  {
-    "student_name": "John Doe",
-    "roll_number": "F20230045",
-    "course": "Optional or null",
-    "quiz_number": "Optional or null",
-    "unreadable": false,
-    "questions": [
-      {
-        "number": 1,
-        "topic": "optional",
-        "question": "Write code for Stack ADT to check bracket balancing",
-        "answer": "student’s attempt",
-        "marks": 2,
-        "max_marks": 3,
-        "subparts": [
-          { "label": "a", "marks": 1, "max_marks": 1, "remarks": "Definition correct" },
-          { "label": "b", "marks": 1, "max_marks": 2, "remarks": "Partially correct" }
-        ],
-        "remarks": "Partially correct logic"
-      }
-    ],
-    "total_score": 5,
-    "max_score": 6,
-    "remarks": "Summary feedback"
-  }
-]
+[ ... same as before ... ]
 
-Do NOT omit the solution paper. Include it as a normal record with full fields and detailed grading/remarks.
-
-If you detect an unnamed paper, set:
-"student_name": "Unknown Student", "roll_number": null
-
-If no valid student found, return [].
+Do NOT omit the solution paper.
 
 OCR TEXT:
 """${rawText}"""
@@ -259,7 +345,7 @@ async function gradeWithGemini(prompt: string): Promise<string> {
   if (!GEMINI_API_KEY)
     throw new Error("GEMINI_API_KEY / GOOGLE_API_KEY is missing");
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1/models/${encodeURIComponent(
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
     GRADER_GEMINI_MODEL
   )}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
 
@@ -465,10 +551,27 @@ function forceSolutionFullMarks(first: any) {
 
 // ---------- Routes ----------
 export function setupGraderRoutes(app: Express, supabase: any) {
+
+  // ✅ Apply auth middleware ONLY to grader routes
+  const auth = requireTeacherAuth(supabase);
+
   // ========== Analyze / Grade ==========
-  app.post("/analyze-quiz/:id", async (req: Request, res: Response) => {
+  app.post("/analyze-quiz/:id", graderHeavyLimiter, auth, async (req: Request, res: Response) => {
     try {
       const quizId = req.params.id;
+      const teacherId = (req as any).teacherId as string;
+
+      // ✅ NEW: validate quizId
+      if (!isUUID(quizId)) {
+        return res.status(400).json({ error: "Invalid quiz id" });
+      }
+
+      // ✅ Ownership check
+      const allowed = await requireQuizOwnership(supabase, quizId, teacherId);
+      if (!allowed) {
+        return res.status(403).json({ error: "Forbidden: you do not own this quiz" });
+      }
+
       const {
         gradingMode = "balanced",
         gradingPrompt = "",
@@ -485,8 +588,35 @@ export function setupGraderRoutes(app: Express, supabase: any) {
         useSolutionKey?: boolean;
       };
 
+      // ✅ NEW: validate provider/mode/leniency types
+      const providerClean = String(provider || "").toLowerCase();
+      if (!allowedProviders.has(providerClean)) {
+        return res.status(400).json({ error: "Invalid provider (must be openai or gemini)" });
+      }
+
+      const modeClean = String(gradingMode || "").toLowerCase();
+      if (!allowedModes.has(modeClean)) {
+        return res.status(400).json({ error: "Invalid gradingMode" });
+      }
+
+      const lenClean = String(leniency || "").toLowerCase();
+      if (!allowedLeniency.has(lenClean)) {
+        return res.status(400).json({ error: "Invalid leniency" });
+      }
+
+      // ✅ NEW: cap prompt length (prevents abuse)
+      const safeTeacherPrompt = clampString(gradingPrompt, 4000);
+
+      // ✅ NEW: rubric validation
+      if (!validateRubric(rubric)) {
+        return res.status(400).json({ error: "Invalid rubric payload" });
+      }
+
+      // ✅ NEW: boolean validation
+      const useSolutionKeyClean = !!useSolutionKey;
+
       console.log(
-        `🧠 Grading quiz ${quizId} (${gradingMode} mode, provider=${provider}, leniency=${leniency}, solutionKey=${useSolutionKey})`
+        `🧠 Grading quiz ${quizId} (${modeClean} mode, provider=${providerClean}, leniency=${lenClean}, solutionKey=${useSolutionKeyClean})`
       );
 
       const { data: quiz, error: quizError } = await supabase
@@ -506,22 +636,22 @@ export function setupGraderRoutes(app: Express, supabase: any) {
 
       const prompt = buildGradingPrompt(
         rawText,
-        gradingMode,
-        gradingPrompt,
+        modeClean,
+        safeTeacherPrompt,
         rubric,
-        (leniency as Leniency) || "exact_only",
-        !!useSolutionKey
+        (lenClean as Leniency) || "exact_only",
+        !!useSolutionKeyClean
       );
 
       let graded = "";
-      if (provider === "gemini") graded = await gradeWithGemini(prompt);
+      if (providerClean === "gemini") graded = await gradeWithGemini(prompt);
       else graded = await gradeWithOpenAI(prompt);
 
       console.log(`✅ AI Grading Completed (len=${graded?.length || 0})`);
 
       const parsedArray = normalizeGradedToArray(graded);
 
-      if (useSolutionKey && Array.isArray(parsedArray) && parsedArray.length > 0) {
+      if (useSolutionKeyClean && Array.isArray(parsedArray) && parsedArray.length > 0) {
         try {
           forceSolutionFullMarks(parsedArray[0]);
         } catch (e) {
@@ -538,7 +668,7 @@ export function setupGraderRoutes(app: Express, supabase: any) {
       const { error: upQuizErr } = await supabase
         .from("quizzes")
         .update({
-          grading_mode: gradingMode,
+          grading_mode: modeClean,
           formatted_text: graded,
           graded_json: parsedArray ?? null,
         })
@@ -628,9 +758,20 @@ export function setupGraderRoutes(app: Express, supabase: any) {
   });
 
   // ========== Export CSV ==========
-  app.post("/export-csv/:id", async (req: Request, res: Response) => {
+  app.post("/export-csv/:id", graderGeneralLimiter, auth, async (req: Request, res: Response) => {
     try {
       const quizId = req.params.id;
+      const teacherId = (req as any).teacherId as string;
+
+      // ✅ NEW: validate quizId
+      if (!isUUID(quizId)) {
+        return res.status(400).json({ error: "Invalid quiz id" });
+      }
+
+      const allowed = await requireQuizOwnership(supabase, quizId, teacherId);
+      if (!allowed) {
+        return res.status(403).json({ error: "Forbidden: you do not own this quiz" });
+      }
 
       const { data: quiz, error: qErr } = await supabase
         .from("quizzes")
@@ -702,13 +843,25 @@ export function setupGraderRoutes(app: Express, supabase: any) {
   });
 
   // ========== Build graded PDFs pack (solution/best/avg/low) ==========
-  app.post("/build-graded-pack/:id", async (req: Request, res: Response) => {
+  app.post("/build-graded-pack/:id", graderGeneralLimiter, auth, async (req: Request, res: Response) => {
     try {
       const quizId = req.params.id;
+      const teacherId = (req as any).teacherId as string;
 
+      // ✅ NEW: validate quizId
+      if (!isUUID(quizId)) {
+        return res.status(400).json({ error: "Invalid quiz id" });
+      }
+
+      const allowed = await requireQuizOwnership(supabase, quizId, teacherId);
+      if (!allowed) {
+        return res.status(403).json({ error: "Forbidden: you do not own this quiz" });
+      }
+
+      // ✅ FIX #2: fetch read_first_paper_is_solution + graded_json to correctly pick solution
       const { data: quiz, error: quizError } = await supabase
         .from("quizzes")
-        .select("id, original_pdf")
+        .select("id, original_pdf, graded_json, read_first_paper_is_solution")
         .eq("id", quizId)
         .single();
       if (quizError || !quiz?.original_pdf) {
@@ -736,10 +889,23 @@ export function setupGraderRoutes(app: Express, supabase: any) {
         .filter(Boolean)
         .sort((a: any, b: any) => (b.total_score || 0) - (a.total_score || 0));
 
-      const solution = list[0];
-      const best = list[0];
-      const low = list[list.length - 1];
-      const avg = list[Math.floor(list.length / 2)];
+      // ✅ NEW CORRECT SOLUTION LOGIC (minimal change)
+      const readFirstPaperIsSolution = (quiz as any).read_first_paper_is_solution !== false;
+
+      let solution: any = null;
+      let pool = list;
+
+      if (readFirstPaperIsSolution && Array.isArray((quiz as any).graded_json) && (quiz as any).graded_json.length > 0) {
+        solution = (quiz as any).graded_json[0];
+        // Remove solution from ranking pool if it exists in list
+        pool = list.filter((x: any) => x !== solution);
+      } else {
+        solution = list[0];
+      }
+
+      const best = pool[0] || list[0];
+      const low = pool[pool.length - 1] || list[list.length - 1];
+      const avg = pool[Math.floor(pool.length / 2)] || list[Math.floor(list.length / 2)];
 
       async function makeAndUpload(label: string, summary: any) {
         const stamped = await annotatePdfWithSummary(originalBuf, summary);

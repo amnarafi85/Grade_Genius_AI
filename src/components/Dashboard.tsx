@@ -16,7 +16,9 @@ import TakeViva from "./take_viva";
 export default function Dashboard({ teacherId }: DashboardProps) {
   // ===== UI / nav =====
   // ✅ ONLY CHANGE HERE: Add take_viva
-  const [activeTab, setActiveTab] = useState<"checker" | "results" | "excel" | "take_viva">("checker");
+  const [activeTab, setActiveTab] = useState<
+    "checker" | "results" | "excel" | "take_viva" | "uploads"
+  >("checker");
   const [showSettings, setShowSettings] = useState(false);
 
   // ===== Data =====
