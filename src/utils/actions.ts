@@ -288,13 +288,24 @@ export async function downloadSBAW(
       console.warn("[SBAB] Non-JSON or error page:", r.status, txt.slice(0, 120));
     }
 
-    // ✅ If SBAB returned a direct file URL
+    // ✅ If SBAB returned a single PDF URL
     if (j?.success && (j?.sbab_pdf || j?.url)) {
       const fileUrl = j.sbab_pdf || j.url;
 
-      // ✅ DO NOT fetch with credentials for Supabase public URLs (causes CORS)
-      // Just open in new tab (browser will download/open)
-      window.open(fileUrl, "_blank");
+      const pdfRes = await fetch(fileUrl, { credentials: "omit" }); // ✅ important
+      if (!pdfRes.ok) {
+        throw new Error(`Failed to fetch PDF (${pdfRes.status})`);
+      }
+
+      const blob = await pdfRes.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = desiredName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
       return;
     }
 
@@ -314,7 +325,21 @@ export async function downloadSBAW(
     else {
       const txt = await r.text();
       const possibleUrl = txt.trim();
-      if (/^https?:\/\//i.test(possibleUrl)) { window.open(possibleUrl, "_blank"); return; }
+      if (/^https?:\/\//i.test(possibleUrl)) {
+        // ✅ If server returned raw URL text, fetch it without credentials
+        const pdfRes = await fetch(possibleUrl, { credentials: "omit" });
+        if (!pdfRes.ok) throw new Error(`Failed to fetch PDF (${pdfRes.status})`);
+        const blob = await pdfRes.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = desiredName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        return;
+      }
       throw new Error(`Server returned non-JSON (${r.status}). Body starts with: ${txt.slice(0, 80)}`);
     }
 
@@ -322,6 +347,7 @@ export async function downloadSBAW(
 
     const { solution_pdf, best_pdf, average_pdf, low_pdf } = j;
     if (solution_pdf || best_pdf || average_pdf || low_pdf) {
+      // If these are URLs, open them (or download similarly one-by-one if you want)
       if (solution_pdf) window.open(solution_pdf, "_blank");
       if (best_pdf) window.open(best_pdf, "_blank");
       if (average_pdf) window.open(average_pdf, "_blank");
@@ -332,8 +358,18 @@ export async function downloadSBAW(
     const urlFromServer = j?.sbaw_pdf || j?.sbab_pdf || j?.url;
     if (!urlFromServer) { alert(`Failed to build SBAW: ${j?.error || "Unknown error"}`); return; }
 
-    // ✅ again: open directly to avoid CORS + credentials issues
-    window.open(urlFromServer, "_blank");
+    const pdfRes = await fetch(urlFromServer, { credentials: "omit" }); // ✅ important
+    if (!pdfRes.ok) throw new Error(`Failed to fetch PDF (${pdfRes.status})`);
+
+    const blob = await pdfRes.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = desiredName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   } catch (e: any) {
     console.error("[SBAW] download error:", e);
     alert(`SBAW download failed: ${e.message}`);
