@@ -37,7 +37,7 @@ export async function processQuiz(
   try {
     setOcrText("⏳ Running OCR…");
 
-    const r = await fetch(`http://localhost:5000/process-quiz/${quizId}?engine=${engine}`, {
+    const r = await fetch(`https://grade-genius-ai-backend.onrender.com/process-quiz/${quizId}?engine=${engine}`, {
       method: "POST",
       headers: {
         ...(await authHeaders()),
@@ -74,7 +74,7 @@ export async function analyzeQuiz(
     setGradingResult("🧠 Grading in progress…");
     setPackLinks(null);
 
-    const r = await fetch(`http://localhost:5000/analyze-quiz/${quizId}`, {
+    const r = await fetch(`https://grade-genius-ai-backend.onrender.com/analyze-quiz/${quizId}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -160,7 +160,7 @@ export async function exportCsv(
   quizzes: Quiz[],
   refetch: () => Promise<void>
 ) {
-  const r = await fetch(`http://localhost:5000/export-csv/${quizId}`, {
+  const r = await fetch(`https://grade-genius-ai-backend.onrender.com/export-csv/${quizId}`, {
     method: "POST",
     headers: {
       ...(await authHeaders()),
@@ -208,7 +208,7 @@ export async function buildPack(
   setPackLinks: (v: Record<string, string> | null) => void,
   downloadGreenResults: (quizId: string) => Promise<void>
 ) {
-  const r = await fetch(`http://localhost:5000/build-graded-pack/${quizId}`, {
+  const r = await fetch(`https://grade-genius-ai-backend.onrender.com/build-graded-pack/${quizId}`, {
     method: "POST",
     headers: {
       ...(await authHeaders()),
@@ -231,7 +231,7 @@ export async function downloadGreenResults(
   quizzes: Quiz[]
 ) {
   try {
-    const r = await fetch(`http://localhost:5000/build-green-graded/${quizId}`, {
+    const r = await fetch(`https://grade-genius-ai-backend.onrender.com/build-green-graded/${quizId}`, {
       method: "POST",
       headers: {
         ...(await authHeaders()),
@@ -271,7 +271,7 @@ export async function downloadSBAW(
   try {
     const desiredName = `${baseNameFor(quizId, quizzes)}_SBAW.pdf`;
 
-    let r = await fetch(`http://localhost:5000/build-sbab/${quizId}`, {
+    let r = await fetch(`https://grade-genius-ai-backend.onrender.com/build-sbab/${quizId}`, {
       method: "POST",
       headers: {
         ...(await authHeaders()),
@@ -302,7 +302,7 @@ export async function downloadSBAW(
     }
 
     // fallback to /build-sbaw
-    r = await fetch(`http://localhost:5000/build-sbaw/${quizId}`, {
+    r = await fetch(`https://grade-genius-ai-backend.onrender.com/build-sbaw/${quizId}`, {
       method: "POST",
       headers: {
         ...(await authHeaders()),

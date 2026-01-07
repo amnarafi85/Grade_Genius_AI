@@ -24,7 +24,7 @@ export default function FileUpload({ teacherId, onUploadComplete }: Props) {
       const form = new FormData();
       form.append("file", file);
 
-      const url = new URL("http://localhost:5000/upload");
+      const url = new URL("https://grade-genius-ai-backend.onrender.com/upload");
       url.searchParams.set("teacher_id", teacherId);
       if (quizTitle.trim())  url.searchParams.set("title", quizTitle.trim());
       if (quizSection.trim()) url.searchParams.set("section", quizSection.trim());

@@ -263,6 +263,7 @@ const CheckerPanel: React.FC<Props> = (props) => {
     else if (running === "ocr+grade") setFlow("ocr");
   }, [running]);
 
+
   useEffect(() => {
     if (!gradingResult) return;
     if (gradingResult.startsWith("🧠 Grading in progress")) setFlow("grading");
@@ -278,7 +279,7 @@ const CheckerPanel: React.FC<Props> = (props) => {
 
   async function ensurePreviewUrl(quizId: string) {
     try {
-      const r = await fetch(`http://localhost:5000/build-green-graded/${quizId}`, { method: "POST" });
+      const r = await fetch(`https://grade-genius-ai-backend.onrender.com/build-green-graded/${quizId}`, { method: "POST" });
       const j = await r.json();
       if (j?.success && j?.url) {
         setPreviewUrl(j.url);
