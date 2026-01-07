@@ -290,7 +290,7 @@ export async function downloadSBAW(
 
     if (j?.success && (j?.sbab_pdf || j?.url)) {
       const fileUrl = j.sbab_pdf || j.url;
-      const pdfRes = await fetch(fileUrl, { credentials: "include" });
+      const pdfRes = await fetch(urlFromServer, { credentials: "include" });
       if (!pdfRes.ok) { window.open(fileUrl, "_blank"); return; }
       const blob = await pdfRes.blob();
       const url = URL.createObjectURL(blob);
