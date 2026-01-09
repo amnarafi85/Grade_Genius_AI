@@ -23,6 +23,9 @@ export default function Auth() {
   // Internal guard so we auto-apply password only once after recovery
   const [autoResetAttempted, setAutoResetAttempted] = useState(false)
 
+  // ✅ NEW: cache signup details until user confirms email + signs in
+  const PENDING_SIGNUP_KEY = "pendingTeacherSignup"
+
   // --- Helpers: parse tokens from URL fragment (access_token & refresh_token) ---
   function parseHashTokens(hash: string) {
     // hash looks like: #access_token=...&refresh_token=...&type=recovery
@@ -36,9 +39,8 @@ export default function Auth() {
 
   // ✅ Back button behavior (always shown)
   const handleBack = () => {
-  window.location.assign("/");
-};
-
+    window.location.assign("/")
+  }
 
   // 1) On mount, restore session from URL (supports both ?code= and #access_token=)
   useEffect(() => {
@@ -49,7 +51,8 @@ export default function Auth() {
     const { access_token, refresh_token, type: hashType } = parseHashTokens(hash)
     const hasTokens = !!access_token && !!refresh_token
     const code = urlParams.get("code") || undefined
-    const isRecoveryFlag = /type=recovery/.test(hash) || /type=recovery/.test(search) || hashType === "recovery"
+    const isRecoveryFlag =
+      /type=recovery/.test(hash) || /type=recovery/.test(search) || hashType === "recovery"
 
     ;(async () => {
       try {
@@ -92,6 +95,83 @@ export default function Auth() {
     })()
   }, [])
 
+  // ✅ NEW helper: finalize teacher/courses/sections once authenticated
+  async function finalizeTeacherSetup(session: any) {
+    const pendingRaw = localStorage.getItem(PENDING_SIGNUP_KEY)
+    if (!pendingRaw) return
+
+    const pending = JSON.parse(pendingRaw) as {
+      teacherName: string
+      courseNamesCsv: string
+      courseSections: Record<string, string>
+    }
+
+    const user = session.user
+    if (!user) return
+
+    // Build course list from cached CSV (same logic you had)
+    const courseListLocal = Array.from(
+      new Set(
+        (pending.courseNamesCsv || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      )
+    )
+
+    // 1) Teacher profile
+    const teacherPayload = {
+      id: user.id,
+      email: user.email,
+      name: pending.teacherName || null,
+    }
+
+    const { error: teacherErr } = await supabase.from("teachers").insert(teacherPayload).single()
+    if (teacherErr && teacherErr.code !== "23505") throw teacherErr
+
+    // 2) Courses
+    const courseInserts = courseListLocal.map((name) => ({
+      teacher_id: user.id,
+      name,
+    }))
+
+    let createdCourses: { id: string; name: string }[] = []
+    if (courseInserts.length > 0) {
+      const { data: insCourses, error: cErr } = await supabase
+        .from("courses")
+        .insert(courseInserts)
+        .select("id, name")
+      if (cErr) throw cErr
+      createdCourses = insCourses || []
+    }
+
+    // 3) Sections (per created course)
+    const sectionInserts: { course_id: string; name: string }[] = []
+    for (const c of createdCourses) {
+      const secsCsv = (pending.courseSections?.[c.name] || "").trim()
+      if (!secsCsv) continue
+      const sections = Array.from(
+        new Set(
+          secsCsv
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        )
+      )
+      sections.forEach((s) => {
+        sectionInserts.push({ course_id: c.id, name: s })
+      })
+    }
+
+    if (sectionInserts.length > 0) {
+      const { error: sErr } = await supabase.from("sections").insert(sectionInserts)
+      if (sErr) throw sErr
+    }
+
+    // ✅ done
+    localStorage.removeItem(PENDING_SIGNUP_KEY)
+  }
+
   // 2) Also listen for auth events; when SIGNED_IN happens (after clicking email), set password from cache
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -109,6 +189,13 @@ export default function Auth() {
             setNewPassword("")
             window.history.replaceState({}, "", window.location.pathname)
           }
+        }
+
+        // ✅ NEW: finish signup DB inserts after user is truly authenticated
+        try {
+          await finalizeTeacherSetup(session)
+        } catch (e: any) {
+          alert(e?.message || "Failed to finish signup setup.")
         }
       }
 
@@ -210,6 +297,22 @@ export default function Auth() {
         })
         if (error) throw error
 
+        // ✅ NEW: If there's no session yet (email confirmation ON),
+        // cache the setup data and DO NOT insert into RLS-protected tables now.
+        if (!data.session) {
+          localStorage.setItem(
+            PENDING_SIGNUP_KEY,
+            JSON.stringify({
+              teacherName,
+              courseNamesCsv,
+              courseSections,
+            })
+          )
+          alert("Signup successful! Check your email to confirm. After you log in, setup will finish automatically.")
+          return
+        }
+
+        // If session exists (email confirmation OFF), proceed exactly like before
         const user = data.user ?? (await supabase.auth.getUser()).data.user
         if (user) {
           const teacherPayload = {
@@ -218,10 +321,7 @@ export default function Auth() {
             name: teacherName || null,
           }
 
-          const { error: teacherErr } = await supabase
-            .from("teachers")
-            .insert(teacherPayload)
-            .single()
+          const { error: teacherErr } = await supabase.from("teachers").insert(teacherPayload).single()
 
           if (teacherErr && teacherErr.code !== "23505") {
             throw teacherErr
@@ -284,13 +384,10 @@ export default function Auth() {
   return (
     <div className="auth-container">
       {/* ✅ Back button shown for Login + Signup + Reset + Recovery */}
-      <button
-        type="button"
-        className="back-btn"
-        onClick={handleBack}
-        aria-label="Go back"
-      >
-        <span className="back-ic" aria-hidden="true">←</span>
+      <button type="button" className="back-btn" onClick={handleBack} aria-label="Go back">
+        <span className="back-ic" aria-hidden="true">
+          ←
+        </span>
         Back
       </button>
 
@@ -374,9 +471,7 @@ export default function Auth() {
                       type="text"
                       placeholder="e.g. Section A, Section B"
                       value={courseSections[c] || ""}
-                      onChange={(e) =>
-                        setCourseSections((prev) => ({ ...prev, [c]: e.target.value }))
-                      }
+                      onChange={(e) => setCourseSections((prev) => ({ ...prev, [c]: e.target.value }))}
                     />
                   </div>
                 ))}
@@ -414,11 +509,7 @@ export default function Auth() {
           )}
 
           {isResetRequestMode && (
-            <p
-              className="toggle-text"
-              onClick={() => setIsResetRequestMode(false)}
-              style={{ marginTop: 8 }}
-            >
+            <p className="toggle-text" onClick={() => setIsResetRequestMode(false)} style={{ marginTop: 8 }}>
               Back to Login
             </p>
           )}
