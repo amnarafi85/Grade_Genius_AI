@@ -48,16 +48,28 @@ const RubricBuilder: React.FC<Props> = ({
 }) => {
   return (
     <div className="panel rb">
-      <div className="rb-header">
-        <h3 className="rb-title">{title}</h3>
-        <p className="rb-subtitle">
-          Define marks per question and optional subparts. <em>Subparts format:</em>{" "}
-          <code>a:2,b:3</code> or <code>a:2:Stacks topic,b:3:Queues</code>
-        </p>
+      <div className="rb-top">
+        <div className="rb-head">
+          <h3 className="rb-title">{title}</h3>
+          <p className="rb-subtitle">
+            Define marks per question and optional subparts.
+          </p>
+        </div>
+
+        <div className="rb-help">
+          <span className="rb-pill">
+            <span className="rb-pill-dot" aria-hidden />
+            Subparts format
+          </span>
+          <span className="rb-code">a:2,b:3</span>
+          <span className="rb-code">a:2:Stacks topic,b:3:Queues</span>
+        </div>
       </div>
 
       <div className="rb-controls">
-        <label className="rb-label" htmlFor="totalQuestions">Total Questions:</label>
+        <label className="rb-label" htmlFor="totalQuestions">
+          Total Questions:
+        </label>
         <input
           id="totalQuestions"
           className="rb-input rb-input--number"
@@ -83,7 +95,8 @@ const RubricBuilder: React.FC<Props> = ({
             <tbody>
               {rubricRows.map((row) => (
                 <tr key={row.number} className="rb-tr">
-                  <td className="rb-td rb-col-narrow">{row.number}</td>
+                  <td className="rb-td rb-col-narrow rb-num">{row.number}</td>
+
                   <td className="rb-td">
                     <input
                       className="rb-input"
@@ -97,6 +110,7 @@ const RubricBuilder: React.FC<Props> = ({
                       placeholder="e.g., Trees / Sorting"
                     />
                   </td>
+
                   <td className="rb-td rb-col-medium">
                     <input
                       className="rb-input"
@@ -110,6 +124,7 @@ const RubricBuilder: React.FC<Props> = ({
                       placeholder="e.g., 5"
                     />
                   </td>
+
                   <td className="rb-td">
                     <input
                       className="rb-input"

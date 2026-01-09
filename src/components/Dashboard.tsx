@@ -15,11 +15,11 @@ import TakeViva from "./take_viva";
 
 export default function Dashboard({ teacherId }: DashboardProps) {
   // ===== UI / nav =====
-  // ✅ ONLY CHANGE HERE: Add take_viva
-  const [activeTab, setActiveTab] = useState<
-    "checker" | "results" | "excel" | "take_viva" | "uploads"
-  >("checker");
+  const [activeTab, setActiveTab] = useState<"checker" | "results" | "excel" | "take_viva" | "uploads">("checker");
   const [showSettings, setShowSettings] = useState(false);
+
+  // UI-only search
+  const [searchQuery, setSearchQuery] = useState("");
 
   // ===== Data =====
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -29,8 +29,9 @@ export default function Dashboard({ teacherId }: DashboardProps) {
   const [ocrText, setOcrText] = useState<string | null>(null);
   const [gradingResult, setGradingResult] = useState<string | null>(null);
 
-  const [gradingMode, setGradingMode] =
-    useState<"very_easy" | "easy" | "balanced" | "strict" | "hard" | "blind">("balanced");
+  const [gradingMode, setGradingMode] = useState<"very_easy" | "easy" | "balanced" | "strict" | "hard" | "blind">(
+    "balanced"
+  );
   const [gradingProvider, setGradingProvider] = useState<"openai" | "gemini">("openai");
   const [customPrompt, setCustomPrompt] = useState("");
 
@@ -46,9 +47,9 @@ export default function Dashboard({ teacherId }: DashboardProps) {
 
   // ===== Rubric builder =====
   const [totalQuestions, setTotalQuestions] = useState<number>(0);
-  const [rubricRows, setRubricRows] = useState<
-    { number: number; topic: string; maxMarks: string; subpartsRaw: string }[]
-  >([]);
+  const [rubricRows, setRubricRows] = useState<{ number: number; topic: string; maxMarks: string; subpartsRaw: string }[]>(
+    []
+  );
 
   useEffect(() => {
     if (totalQuestions <= 0) {
@@ -75,7 +76,7 @@ export default function Dashboard({ teacherId }: DashboardProps) {
 
   const downloadGreenResults = (quizId: string) => dlGreen(quizId, quizzes);
 
-  // ===== Profile / settings (name, courses, forgot password redirect) =====
+  // ===== Profile / settings =====
   const [teacherEmail, setTeacherEmail] = useState<string | null>(null);
   const [teacherName, setTeacherName] = useState<string>("");
   const [savingProfile, setSavingProfile] = useState(false);
@@ -87,7 +88,6 @@ export default function Dashboard({ teacherId }: DashboardProps) {
   const [editingCourseName, setEditingCourseName] = useState<string>("");
 
   useEffect(() => {
-    // load auth email
     supabase.auth.getUser().then(({ data }) => {
       const email = data?.user?.email ?? null;
       setTeacherEmail(email || null);
@@ -95,13 +95,8 @@ export default function Dashboard({ teacherId }: DashboardProps) {
   }, []);
 
   useEffect(() => {
-    // load teacher profile (name/email)
     const loadProfile = async () => {
-      const { data, error } = await supabase
-        .from("teachers")
-        .select("name, email")
-        .eq("id", teacherId)
-        .single();
+      const { data, error } = await supabase.from("teachers").select("name, email").eq("id", teacherId).single();
       if (!error && data) {
         setTeacherName(data.name ?? "");
         setTeacherEmail(data.email ?? teacherEmail);
@@ -122,7 +117,6 @@ export default function Dashboard({ teacherId }: DashboardProps) {
   };
 
   useEffect(() => {
-    // load teacher courses when settings is opened
     if (showSettings) refreshCourses();
   }, [showSettings, teacherId]);
 
@@ -132,7 +126,6 @@ export default function Dashboard({ teacherId }: DashboardProps) {
     setSavingProfile(false);
   };
 
-  // redirect-only forgot password
   const handleResetPassword = async () => {
     window.location.href = "/auth/forgot-password";
   };
@@ -171,16 +164,32 @@ export default function Dashboard({ teacherId }: DashboardProps) {
 
   return (
     <div className="dashboard">
-      {/* Topbar */}
+      {/* Topbar (FIXED) */}
       <header className="topbar">
         <div className="brand">
-          {/* <span className="brand-logo" aria-hidden>📚</span> */}
+          <span className="brand-logo" aria-hidden>
+            📋
+          </span>
           <h1 className="brand-title">Teacher Dashboard</h1>
         </div>
 
-        {/* Welcome + teacher name */}
-        <div className="muted" style={{ fontWeight: 700 }}>
-          Welcome{teacherName ? `, ${teacherName}` : ""}
+        {/* Search (UI only) */}
+        <div className="topbar-center" aria-label="Topbar Search">
+          <div className="searchbar">
+            <span className="search-ico" aria-hidden>
+              🔍
+            </span>
+            <input
+              className="search-input"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search..."
+            />
+          </div>
+
+          <div className="topbar-sub muted" style={{ fontWeight: 700 }}>
+            Welcome{teacherName ? `, ${teacherName}` : ""}
+          </div>
         </div>
 
         <div className="topbar-actions">
@@ -192,7 +201,14 @@ export default function Dashboard({ teacherId }: DashboardProps) {
           >
             ⚙️
           </button>
-          <button className="logout-button" onClick={handleLogout}>
+
+          {/* ✅ Logout icon button (responsive) */}
+          <button className="icon-button logout-icon" aria-label="Logout" title="Logout" onClick={handleLogout}>
+            ⎋
+          </button>
+
+          {/* Keep your existing logout button too */}
+          <button className="logout-button logout-text" onClick={handleLogout}>
             Logout
           </button>
         </div>
@@ -206,27 +222,44 @@ export default function Dashboard({ teacherId }: DashboardProps) {
               <button
                 className={`nav-link ${activeTab === "checker" ? "active" : ""}`}
                 onClick={() => setActiveTab("checker")}
+                title="Checker"
+                aria-label="Checker"
               >
-                <span className="nav-ico" aria-hidden>🧪</span>
-                <span>Checker</span>
+                <span className="nav-ico" aria-hidden>
+                  🧪
+                </span>
+                <span className="nav-label">Checker</span>
+                <span className="nav-active-dot" aria-hidden />
               </button>
             </li>
+
             <li>
               <button
                 className={`nav-link ${activeTab === "results" ? "active" : ""}`}
                 onClick={() => setActiveTab("results")}
+                title="Results"
+                aria-label="Results"
               >
-                <span className="nav-ico" aria-hidden>📊</span>
-                <span>Results</span>
+                <span className="nav-ico" aria-hidden>
+                  📊
+                </span>
+                <span className="nav-label">Results</span>
+                <span className="nav-active-dot" aria-hidden />
               </button>
             </li>
+
             <li>
               <button
                 className={`nav-link ${activeTab === "excel" ? "active" : ""}`}
                 onClick={() => setActiveTab("excel")}
+                title="Excel"
+                aria-label="Excel"
               >
-                <span className="nav-ico" aria-hidden>🧾</span>
-                <span>Excel</span>
+                <span className="nav-ico" aria-hidden>
+                  🧾
+                </span>
+                <span className="nav-label">Excel</span>
+                <span className="nav-active-dot" aria-hidden />
               </button>
             </li>
 
@@ -235,9 +268,14 @@ export default function Dashboard({ teacherId }: DashboardProps) {
               <button
                 className={`nav-link ${activeTab === "take_viva" ? "active" : ""}`}
                 onClick={() => setActiveTab("take_viva")}
+                title="Take Viva"
+                aria-label="Take Viva"
               >
-                <span className="nav-ico" aria-hidden>🎙️</span>
-                <span>Take Viva</span>
+                <span className="nav-ico" aria-hidden>
+                  🎙️
+                </span>
+                <span className="nav-label">Take Viva</span>
+                <span className="nav-active-dot" aria-hidden />
               </button>
             </li>
 
@@ -247,78 +285,80 @@ export default function Dashboard({ teacherId }: DashboardProps) {
 
         {/* Main content */}
         <main className="content">
-          {activeTab === "checker" && (
-            <CheckerPanel
-              teacherId={teacherId}
-              quizzes={quizzes}
-              refetch={refetch}
-              running={running}
-              setRunning={setRunning}
-              ocrText={ocrText}
-              setOcrText={setOcrText}
-              gradingResult={gradingResult}
-              setGradingResult={setGradingResult}
-              lastUploadedQuizId={lastUploadedQuizId}
-              setLastUploadedQuizId={setLastUploadedQuizId}
-              ocrEngine={ocrEngine}
-              setOcrEngine={setOcrEngine}
-              gradingMode={gradingMode}
-              setGradingMode={setGradingMode}
-              gradingProvider={gradingProvider}
-              setGradingProvider={setGradingProvider}
-              customPrompt={customPrompt}
-              setCustomPrompt={setCustomPrompt}
-              leniency={leniency}
-              setLeniency={setLeniency}
-              useSolutionKey={useSolutionKey}
-              setUseSolutionKey={setUseSolutionKey}
-              totalQuestions={totalQuestions}
-              setTotalQuestions={setTotalQuestions}
-              rubricRows={rubricRows}
-              setRubricRows={setRubricRows}
-              rubricPayload={rubricPayload}
-              downloadGreenResults={downloadGreenResults}
-            />
-          )}
+          <div className="content-inner">
+            {activeTab === "checker" && (
+              <CheckerPanel
+                teacherId={teacherId}
+                quizzes={quizzes}
+                refetch={refetch}
+                running={running}
+                setRunning={setRunning}
+                ocrText={ocrText}
+                setOcrText={setOcrText}
+                gradingResult={gradingResult}
+                setGradingResult={setGradingResult}
+                lastUploadedQuizId={lastUploadedQuizId}
+                setLastUploadedQuizId={setLastUploadedQuizId}
+                ocrEngine={ocrEngine}
+                setOcrEngine={setOcrEngine}
+                gradingMode={gradingMode}
+                setGradingMode={setGradingMode}
+                gradingProvider={gradingProvider}
+                setGradingProvider={setGradingProvider}
+                customPrompt={customPrompt}
+                setCustomPrompt={setCustomPrompt}
+                leniency={leniency}
+                setLeniency={setLeniency}
+                useSolutionKey={useSolutionKey}
+                setUseSolutionKey={setUseSolutionKey}
+                totalQuestions={totalQuestions}
+                setTotalQuestions={setTotalQuestions}
+                rubricRows={rubricRows}
+                setRubricRows={setRubricRows}
+                rubricPayload={rubricPayload}
+                downloadGreenResults={downloadGreenResults}
+              />
+            )}
 
-          {activeTab === "excel" && <ExcelPanel quizzes={quizzes} loading={loading} />}
+            {activeTab === "excel" && <ExcelPanel quizzes={quizzes} loading={loading} />}
 
-          {activeTab === "results" && (
-            <ResultsPanel
-              quizzes={quizzes}
-              loading={loading}
-              packLinks={packLinks}
-              setPackLinks={setPackLinks}
-              gradingMode={gradingMode}
-              setGradingMode={setGradingMode}
-              gradingProvider={gradingProvider}
-              setGradingProvider={setGradingProvider}
-              leniency={leniency}
-              setLeniency={setLeniency}
-              useSolutionKey={useSolutionKey}
-              setUseSolutionKey={setUseSolutionKey}
-              totalQuestions={totalQuestions}
-              setTotalQuestions={setTotalQuestions}
-              rubricRows={rubricRows}
-              setRubricRows={setRubricRows}
-              rubricPayload={rubricPayload}
-              customPrompt={customPrompt}
-              setCustomPrompt={setCustomPrompt}
-              gradingResult={gradingResult}
-              setGradingResult={setGradingResult}
-              refetch={refetch}
-            />
-          )}
+            {activeTab === "results" && (
+              <ResultsPanel
+                quizzes={quizzes}
+                loading={loading}
+                packLinks={packLinks}
+                setPackLinks={setPackLinks}
+                gradingMode={gradingMode}
+                setGradingMode={setGradingMode}
+                gradingProvider={gradingProvider}
+                setGradingProvider={setGradingProvider}
+                leniency={leniency}
+                setLeniency={setLeniency}
+                useSolutionKey={useSolutionKey}
+                setUseSolutionKey={setUseSolutionKey}
+                totalQuestions={totalQuestions}
+                setTotalQuestions={setTotalQuestions}
+                rubricRows={rubricRows}
+                setRubricRows={setRubricRows}
+                rubricPayload={rubricPayload}
+                customPrompt={customPrompt}
+                setCustomPrompt={setCustomPrompt}
+                gradingResult={gradingResult}
+                setGradingResult={setGradingResult}
+                refetch={refetch}
+              />
+            )}
 
-          {/* ✅ NEW VIVA PAGE */}
-          {activeTab === "take_viva" && <TakeViva teacherId={teacherId} />}
+            {/* ✅ NEW VIVA PAGE */}
+            {activeTab === "take_viva" && <TakeViva teacherId={teacherId} />}
 
-          {activeTab === "uploads" && (
-            <section className="panel">
-              <h2 className="panel-title">Uploads</h2>
-              <FileUpload />
-            </section>
-          )}
+            {activeTab === "uploads" && (
+              <section className="panel">
+                <h2 className="panel-title">Uploads</h2>
+                <FileUpload />
+              </section>
+            )}
+          </div>
         </main>
       </div>
 

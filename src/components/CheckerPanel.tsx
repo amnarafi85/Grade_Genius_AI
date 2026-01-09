@@ -258,11 +258,17 @@ const CheckerPanel: React.FC<Props> = (props) => {
     [gradingResult, ocrText]
   );
 
+  // ✅ Stepper state (visual only; does not change logic)
+  const stepIndex = useMemo<1 | 2 | 3>(() => {
+    if (canShowResults) return 3;
+    if (lastUploadedQuizId) return 2;
+    return 1;
+  }, [lastUploadedQuizId, canShowResults]);
+
   useEffect(() => {
     if (running === "ocr") setFlow("ocr");
     else if (running === "ocr+grade") setFlow("ocr");
   }, [running]);
-
 
   useEffect(() => {
     if (!gradingResult) return;
@@ -305,7 +311,7 @@ const CheckerPanel: React.FC<Props> = (props) => {
         </div>
         <div className="flow-body">
           {runningHere && (
-            step === "ocr" ? <div className="loader-line"><span/></div> : <div className="typing">
+            step === "ocr" ? <div className="loader-line"><span /></div> : <div className="typing">
               <span></span><span></span><span></span>
             </div>
           )}
@@ -317,223 +323,256 @@ const CheckerPanel: React.FC<Props> = (props) => {
   };
 
   return (
-    <div className="panel">
-      <h2>Upload & Check New Quiz</h2>
+    <div className="panel cp-panel">
+      {/* -------- Main “Upload & Check” card -------- */}
+      <section className="cp-card">
+        <div className="cp-card-head">
+          <h2 className="cp-title">Upload &amp; Check New Quiz</h2>
 
-      {/* Course & Section selection */}
-      <div className="cp-filter">
-        <div className="cp-field">
-          <label htmlFor="courseSel" className="cp-label"><strong>Course:</strong></label>
-          <select
-            id="courseSel"
-            className="cp-select cp-select-course"
-            value={selectedCourseId}
-            onChange={(e) => setSelectedCourseId(e.target.value)}
-          >
-            <option value="">— Select course —</option>
-            {courses.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="cp-field">
-          <label htmlFor="sectionSel" className="cp-label"><strong>Section:</strong></label>
-          <select
-            id="sectionSel"
-            className="cp-select cp-select-section"
-            value={selectedSectionId}
-            onChange={(e) => setSelectedSectionId(e.target.value)}
-            disabled={!selectedCourseId}
-          >
-            <option value="">{selectedCourseId ? "— Select section —" : "Select a course first"}</option>
-            {sections.map(s => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Quiz Name chooser */}
-        <div className="cp-field">
-          <label htmlFor="quizNameSel" className="cp-label"><strong>Quiz Name:</strong></label>
-          <select
-            id="quizNameSel"
-            className="cp-select cp-select-name"
-            value={quizNameChoice}
-            onChange={(e) => setQuizNameChoice(e.target.value as typeof QUIZ_NAME_PRESETS[number])}
-          >
-            {QUIZ_NAME_PRESETS.map(opt => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
-        </div>
-
-        {quizNameChoice === "Other (custom)" && (
-          <div className="cp-field">
-            <label htmlFor="quizNameCustom" className="cp-label"><strong>Custom Name:</strong></label>
-            <input
-              id="quizNameCustom"
-              className="cp-input cp-input-name"
-              type="text"
-              placeholder="e.g., Chapter 5 Test"
-              value={quizNameCustom}
-              onChange={(e) => setQuizNameCustom(e.target.value)}
-            />
+          <div className="cp-stepper" aria-label="Progress">
+            <div className={`cp-step ${stepIndex === 1 ? "active" : ""} ${stepIndex > 1 ? "done" : ""}`}>
+              <span className="cp-step-num">1</span>
+              <span className="cp-step-label">Step 1 <span> Select Info</span></span>
+            </div>
+            <div className="cp-step-line" />
+            <div className={`cp-step ${stepIndex === 2 ? "active" : ""} ${stepIndex > 2 ? "done" : ""}`}>
+              <span className="cp-step-num">2</span>
+              <span className="cp-step-label">Step 2 <span> Upload</span></span>
+            </div>
+            <div className="cp-step-line" />
+            <div className={`cp-step ${stepIndex === 3 ? "active" : ""}`}>
+              <span className="cp-step-num">3</span>
+              <span className="cp-step-label">Step 3 <span> Review</span></span>
+            </div>
           </div>
-        )}
-
-        {/* ---------- NEW: No. of Pages chooser ---------- */}
-        <div className="cp-field">
-          <label htmlFor="pagesSel" className="cp-label"><strong>No. of Pages:</strong></label>
-          <select
-            id="pagesSel"
-            className="cp-select"
-            value={pagesChoice}
-            onChange={(e) => setPagesChoice(e.target.value as typeof PAGE_OPTIONS[number])}
-          >
-            {PAGE_OPTIONS.map(p => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
         </div>
 
-        {pagesChoice === "Custom" && (
+        {/* Step 1: Select info (layout like screenshot) */}
+        <div className="cp-grid">
           <div className="cp-field">
-            <label htmlFor="pagesCustom" className="cp-label"><strong>Custom Pages:</strong></label>
-            <input
-              id="pagesCustom"
-              className="cp-input"
-              type="number"
-              min={1}
-              placeholder="Enter pages (e.g., 7)"
-              value={pagesCustom}
-              onChange={(e) => setPagesCustom(e.target.value)}
-            />
+            <label htmlFor="courseSel" className="cp-label">Course:</label>
+            <select
+              id="courseSel"
+              className="cp-select"
+              value={selectedCourseId}
+              onChange={(e) => setSelectedCourseId(e.target.value)}
+            >
+              <option value="">— Select course —</option>
+              {courses.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </div>
-        )}
-        {/* ------------------------------------------------ */}
-      </div>
 
-      {/* OCR engine */}
-      <div className="cp-row">
-        <label htmlFor="ocrEngine" className="cp-label"><strong>OCR Engine:</strong></label>
-        <select
-          id="ocrEngine"
-          className="cp-select"
-          value={ocrEngine}
-          onChange={(e) => setOcrEngine(e.target.value as any)}
-        >
-          <option value="vision-pdf">Google Vision (PDF)</option>
-          <option value="tesseract">Tesseract</option>
-          <option value="openai-ocr">OpenAI OCR</option>
-          <option value="gemini-ocr">Gemini OCR</option>
-        </select>
-      </div>
+          <div className="cp-field">
+            <label htmlFor="sectionSel" className="cp-label">Section:</label>
+            <select
+              id="sectionSel"
+              className="cp-select"
+              value={selectedSectionId}
+              onChange={(e) => setSelectedSectionId(e.target.value)}
+              disabled={!selectedCourseId}
+            >
+              <option value="">{selectedCourseId ? "— Select section —" : "Select a course first"}</option>
+              {sections.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
 
-      {/* Provider + Mode + Leniency + Solution */}
-      <div className="cp-options">
-        <div className="cp-field">
-          <label className="cp-label"><strong>Grading Provider: </strong></label>
-          <select className="cp-select" value={gradingProvider} onChange={(e) => setGradingProvider(e.target.value as any)}>
-            <option value="openai">OpenAI</option>
-            <option value="gemini">Gemini (AI Studio)</option>
-          </select>
+          <div className="cp-field">
+            <label htmlFor="quizNameSel" className="cp-label">Quiz Name:</label>
+            <select
+              id="quizNameSel"
+              className="cp-select"
+              value={quizNameChoice}
+              onChange={(e) => setQuizNameChoice(e.target.value as typeof QUIZ_NAME_PRESETS[number])}
+            >
+              {QUIZ_NAME_PRESETS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="cp-field">
+            <label htmlFor="pagesSel" className="cp-label">No. of Pages:</label>
+            <select
+              id="pagesSel"
+              className="cp-select"
+              value={pagesChoice}
+              onChange={(e) => setPagesChoice(e.target.value as typeof PAGE_OPTIONS[number])}
+            >
+              {PAGE_OPTIONS.map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+
+          {quizNameChoice === "Other (custom)" && (
+            <div className="cp-field cp-span-2">
+              <label htmlFor="quizNameCustom" className="cp-label">Custom Name:</label>
+              <input
+                id="quizNameCustom"
+                className="cp-input"
+                type="text"
+                placeholder="e.g., Chapter 5 Test"
+                value={quizNameCustom}
+                onChange={(e) => setQuizNameCustom(e.target.value)}
+              />
+            </div>
+          )}
+
+          {pagesChoice === "Custom" && (
+            <div className="cp-field cp-span-2">
+              <label htmlFor="pagesCustom" className="cp-label">Custom Pages:</label>
+              <input
+                id="pagesCustom"
+                className="cp-input"
+                type="number"
+                min={1}
+                placeholder="Enter pages (e.g., 7)"
+                value={pagesCustom}
+                onChange={(e) => setPagesCustom(e.target.value)}
+              />
+            </div>
+          )}
+
+          <div className="cp-field cp-span-2">
+            <label htmlFor="ocrEngine" className="cp-label">OCR Engine:</label>
+            <select
+              id="ocrEngine"
+              className="cp-select"
+              value={ocrEngine}
+              onChange={(e) => setOcrEngine(e.target.value as any)}
+            >
+              <option value="vision-pdf">Google Vision (PDF)</option>
+              <option value="tesseract">Tesseract</option>
+              <option value="openai-ocr">OpenAI OCR</option>
+              <option value="gemini-ocr">Gemini OCR</option>
+            </select>
+          </div>
         </div>
-        <div className="cp-field">
-          <label className="cp-label"><strong>Grading Mode: </strong></label>
-          <select className="cp-select" value={gradingMode} onChange={(e) => setGradingMode(e.target.value as any)}>
-            <option value="very_easy">More Easy</option>
-            <option value="easy">Easy</option>
-            <option value="balanced">Balanced</option>
-            <option value="strict">Strict</option>
-            <option value="hard">Hard</option>
-            <option value="blind">Blind</option>
-          </select>
+
+        {/* Advanced options (keeps everything, just nicer UX) */}
+        <details className="cp-advanced" open>
+          <summary className="cp-advanced-summary">Advanced grading options</summary>
+
+          <div className="cp-advanced-body">
+            <div className="cp-advanced-grid">
+              <div className="cp-field">
+                <label className="cp-label">Grading Provider:</label>
+                <select className="cp-select" value={gradingProvider} onChange={(e) => setGradingProvider(e.target.value as any)}>
+                  <option value="openai">OpenAI</option>
+                  <option value="gemini">Gemini (AI Studio)</option>
+                </select>
+              </div>
+
+              <div className="cp-field">
+                <label className="cp-label">Grading Mode:</label>
+                <select className="cp-select" value={gradingMode} onChange={(e) => setGradingMode(e.target.value as any)}>
+                  <option value="very_easy">More Easy</option>
+                  <option value="easy">Easy</option>
+                  <option value="balanced">Balanced</option>
+                  <option value="strict">Strict</option>
+                  <option value="hard">Hard</option>
+                  <option value="blind">Blind</option>
+                </select>
+              </div>
+
+              <div className="cp-field">
+                <label className="cp-label">Leniency:</label>
+                <select className="cp-select" value={leniency} onChange={(e) => setLeniency(e.target.value as any)}>
+                  <option value="exact_only">Exact Only</option>
+                  <option value="half_correct_full">Full if 1/2 correct</option>
+                  <option value="quarter_correct_full">Full if 1/4 correct</option>
+                  <option value="any_relevant_full">Marks if relevant</option>
+                </select>
+              </div>
+
+              <label className="cp-checkbox">
+                <input
+                  type="checkbox"
+                  checked={useSolutionKey}
+                  onChange={async (e) => {
+                    const checked = e.target.checked;
+                    setUseSolutionKey(checked);
+
+                    // NEW: persist immediately if a quiz is already uploaded
+                    if (lastUploadedQuizId) {
+                      const { error } = await supabase
+                        .from("quizzes")
+                        .update({ read_first_paper_is_solution: checked })
+                        .eq("id", lastUploadedQuizId);
+                      if (error) {
+                        console.warn("Failed to update read_first_paper_is_solution:", error.message);
+                      } else {
+                        await refetch();
+                      }
+                    }
+                  }}
+                />
+                Treat FIRST paper as solution key
+              </label>
+            </div>
+
+            <textarea
+              className="cp-textarea"
+              placeholder="Optional custom instructions for grading (e.g., compare with key, be generous on partial work, etc.)"
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+            />
+
+            {/* Rubric builder (unchanged) */}
+            <div className="cp-rubric">
+              <RubricBuilder
+                totalQuestions={totalQuestions}
+                setTotalQuestions={setTotalQuestions}
+                rubricRows={rubricRows}
+                setRubricRows={setRubricRows}
+              />
+            </div>
+          </div>
+        </details>
+
+        {/* Step 2: Upload area */}
+        <div className="cp-upload-wrap">
+          <div className="cp-upload-box">
+            <div className="cp-upload-title">Upload Quiz PDF</div>
+            <div className="cp-upload-sub">Upload your file to start checking.</div>
+
+            <div className="cp-upload-inner">
+              <FileUpload
+                teacherId={teacherId}
+                onUploadComplete={async (quizId) => {
+                  setLastUploadedQuizId(quizId);
+                  props.setOcrText("📄 File uploaded. Choose an action below.");
+                  await tagQuizMeta(quizId);
+                  setFlow("idle");
+                }}
+              />
+            </div>
+          </div>
         </div>
-        <div className="cp-field">
-          <label className="cp-label"><strong>Leniency: </strong></label>
-          <select className="cp-select" value={leniency} onChange={(e) => setLeniency(e.target.value as any)}>
-            <option value="exact_only">Exact Only</option>
-            <option value="half_correct_full">Full if 1/2 correct</option>
-            <option value="quarter_correct_full">Full if 1/4 correct</option>
-            <option value="any_relevant_full">Marks if relevant</option>
-          </select>
-        </div>
-        <label className="cp-checkbox">
-          <input
-            type="checkbox"
-            checked={useSolutionKey}
-            onChange={async (e) => {
-              const checked = e.target.checked;
-              setUseSolutionKey(checked);
 
-              // NEW: persist immediately if a quiz is already uploaded
-              if (lastUploadedQuizId) {
-                const { error } = await supabase
-                  .from("quizzes")
-                  .update({ read_first_paper_is_solution: checked })
-                  .eq("id", lastUploadedQuizId);
-                if (error) {
-                  console.warn("Failed to update read_first_paper_is_solution:", error.message);
-                } else {
-                  await refetch();
-                }
-              }
-            }}
-          />
-          Treat FIRST paper as solution key
-        </label>
-      </div>
-
-      <textarea
-        className="cp-textarea"
-        placeholder="Optional custom instructions for grading (e.g., compare with key, be generous on partial work, etc.)"
-        value={customPrompt}
-        onChange={(e) => setCustomPrompt(e.target.value)}
-      />
-
-      {/* Rubric builder */}
-      <RubricBuilder
-        totalQuestions={totalQuestions}
-        setTotalQuestions={setTotalQuestions}
-        rubricRows={rubricRows}
-        setRubricRows={setRubricRows}
-      />
-
-      {/* Upload */}
-      <FileUpload
-        teacherId={teacherId}
-        onUploadComplete={async (quizId) => {
-          setLastUploadedQuizId(quizId);
-          props.setOcrText("📄 File uploaded. Choose an action below.");
-          await tagQuizMeta(quizId);
-          setFlow("idle");
-        }}
-      />
-
-      {/* Process Flow (animated) */}
-      <div className="flow-wrap">
-        <StepCard step="ocr"     status={flow} label="OCR: Extracting answers" />
-        <StepCard step="grading" status={flow} label="AI Grading: Scoring & feedback" />
-      </div>
-
-      {/* Actions */}
-      {lastUploadedQuizId && (
+        {/* Primary actions like screenshot */}
         <div className="cp-actions">
           <button
-            className="btn btn-dark"
+            className="cp-btn cp-btn-secondary"
             onClick={() => {
+              if (!lastUploadedQuizId) return;
               setFlow("ocr");
               processQuiz(lastUploadedQuizId, ocrEngine, setRunning, setOcrText, refetch);
             }}
-            disabled={running !== "none"}
+            disabled={running !== "none" || !lastUploadedQuizId}
+            title={!lastUploadedQuizId ? "Upload a quiz first" : ""}
           >
             {running === "ocr" ? "Running OCR…" : "Run OCR Only"}
           </button>
 
           <button
-            className="btn btn-success"
+            className="cp-btn cp-btn-primary"
             onClick={() => {
+              if (!lastUploadedQuizId) return;
               setFlow("ocr");
               processAndGrade(
                 lastUploadedQuizId,
@@ -553,17 +592,24 @@ const CheckerPanel: React.FC<Props> = (props) => {
                 setOcrText
               );
             }}
-            disabled={running !== "none"}
+            disabled={running !== "none" || !lastUploadedQuizId}
+            title={!lastUploadedQuizId ? "Upload a quiz first" : ""}
           >
-            {running === "ocr+grade" ? "OCR + Grading…" : "Run OCR + Grade"}
+            {running === "ocr+grade" ? "OCR + Grading…" : "Start Checking"}
           </button>
         </div>
-      )}
 
-      {/* Text outputs */}
-      {ocrText && <p className="cp-status">{ocrText}</p>}
+        {/* Flow (kept) */}
+        <div className="flow-wrap">
+          <StepCard step="ocr" status={flow} label="OCR: Extracting answers" />
+          <StepCard step="grading" status={flow} label="AI Grading: Scoring & feedback" />
+        </div>
 
-      {/* Friendly AI results */}
+        {/* Status line */}
+        {ocrText && <p className="cp-status">{ocrText}</p>}
+      </section>
+
+      {/* -------- Step 3: Review (kept, just framed nicely) -------- */}
       {(() => {
         const q = lastUploadedQuizId ? quizzes.find(z => z.id === lastUploadedQuizId) : null;
         const structured =
@@ -573,26 +619,32 @@ const CheckerPanel: React.FC<Props> = (props) => {
         if (!structured) return null;
 
         return (
-          <div className="grading-result">
-            <h4>📊 AI Grading Output</h4>
+          <section className="cp-card cp-card-review">
+            <div className="cp-review-head">
+              <h3 className="cp-review-title">📊 AI Grading Output</h3>
+
+              <div className="cp-review-actions">
+                {lastUploadedQuizId && (
+                  <>
+                    <button className="cp-btn cp-btn-ghost" onClick={() => ensurePreviewUrl(lastUploadedQuizId)}>
+                      👀 Preview Results
+                    </button>
+                    <button className="cp-btn cp-btn-ghost" onClick={() => dlGreen(lastUploadedQuizId, quizzes)}>
+                      ⬇️ Download Results (PDF)
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
 
             <div className="gr-wrap">
               <PrettyResults raw={structured} />
             </div>
-
-            <div className="gr-actions">
-              {lastUploadedQuizId && (
-                <>
-                  <button className="btn" onClick={() => ensurePreviewUrl(lastUploadedQuizId)}>👀 Preview Results</button>
-                  <button className="btn" onClick={() => dlGreen(lastUploadedQuizId, quizzes)}>⬇️ Download Results (PDF)</button>
-                </>
-              )}
-            </div>
-          </div>
+          </section>
         );
       })()}
 
-      {/* Preview Modal */}
+      {/* Preview Modal (unchanged) */}
       {previewOpen && previewUrl && (
         <div className="preview-modal" onClick={() => setPreviewOpen(false)}>
           <div className="preview-card" onClick={(e) => e.stopPropagation()}>

@@ -1,150 +1,172 @@
 /* ==============================================================
-   checker.css — Modern Tech Enhanced
-   Deep Blue + Warm Yellow + Purple/Cyan Accents
+   checker.css — Glass / Neon / Starry (matches dashboard screenshot)
+   Keeps your existing class names, adds a stepper + card layout
    ============================================================== */
 
 :root {
-  --bg: #0a0520;
-  --bg-2: #0f1a3a;
-  --card: #140f2d;
-  --field: #1a1240;
-  --ink: #eef4ff;
-  --muted: #b7c6e6;
-  --accent: #ffd166;
-  --accent-2: #ffbf00;
-  --accent-purple: #8b5cf6;
-  --accent-cyan: #06b6d4;
-  --border: rgba(139, 92, 246, 0.2);
-  --border-hover: rgba(6, 182, 212, 0.5);
-  --ring: rgba(255, 209, 102, 0.6);
-  --success: #10b981;
-  --danger: #ff7676;
-  --shadow-lg: 0 18px 60px rgba(0,0,0,.45);
-  --shadow: 0 10px 30px rgba(0,0,0,.35);
-  --shadow-sm: 0 8px 18px rgba(0,0,0,.24);
-  --radius: 12px;
-  --radius-lg: 18px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
+  --cp-bg: rgba(18, 12, 44, 0.42);
+  --cp-bg-2: rgba(25, 16, 63, 0.35);
+  --cp-ink: #eef4ff;
+  --cp-muted: #b7c6e6;
+
+  --cp-purple: #8b5cf6;
+  --cp-cyan: #06b6d4;
+  --cp-pink: #ff4fd8;
+
+  --cp-border: rgba(139, 92, 246, 0.22);
+  --cp-border-hover: rgba(6, 182, 212, 0.55);
+  --cp-ring: rgba(6, 182, 212, 0.25);
+
+  --cp-success: #10b981;
+  --cp-danger: #ff6b6b;
+
+  --cp-shadow-lg: 0 22px 70px rgba(0,0,0,0.45);
+  --cp-shadow: 0 14px 45px rgba(0,0,0,0.35);
+  --cp-shadow-sm: 0 10px 22px rgba(0,0,0,0.28);
+
+  --cp-radius: 16px;
+  --cp-radius-lg: 20px;
 }
 
-/* ========================================
-   PANEL HEADER WITH GRADIENT
-======================================== */
-.panel > h2 {
-  margin: 0 0 var(--space-5);
-  font-size: clamp(24px, 2.5vw, 32px);
-  font-weight: 900;
-  letter-spacing: -0.5px;
-  background: linear-gradient(135deg, #ffffff 0%, #06b6d4 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  position: relative;
+/* panel wrapper from dashboard */
+.cp-panel {
+  gap: 18px;
 }
 
-.panel > h2::after {
-  content: "";
-  display: block;
-  width: 140px;
-  height: 4px;
-  margin-top: 14px;
-  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
-  border-radius: 2px;
-  box-shadow: 0 0 12px rgba(6, 182, 212, 0.5);
-}
-
-/* ========================================
-   LABELS & HINTS
-======================================== */
-.cp-label {
-  margin-bottom: 8px;
-  display: inline-block;
-  font-weight: 700;
-  font-size: 0.95rem;
-  background: linear-gradient(135deg, #ffffff 0%, #8b5cf6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.cp-label strong {
-  background: linear-gradient(135deg, #ffffff 0%, #06b6d4 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* ========================================
-   INPUTS - GLASSMORPHISM
-======================================== */
-.cp-select,
-.cp-input,
-.cp-textarea {
-  background: rgba(26, 18, 64, 0.5);
-  backdrop-filter: blur(10px);
-  color: var(--ink);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 16px;
-  transition: all 0.3s ease;
-  font-size: 0.95rem;
-}
-
-.cp-select:focus,
-.cp-input:focus,
-.cp-textarea:focus {
-  outline: none;
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.2), 0 4px 15px rgba(6, 182, 212, 0.3);
-  background: rgba(26, 18, 64, 0.7);
-  transform: translateY(-1px);
-}
-
-.cp-input::placeholder,
-.cp-textarea::placeholder {
-  color: rgba(183, 198, 230, 0.5);
-}
-
-.cp-textarea {
-  width: 100%;
-  min-height: 140px;
-  line-height: 1.6;
-}
-
-/* ========================================
-   FILTER ROW - ENHANCED
-======================================== */
-.cp-filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px 20px;
-  align-items: end;
-  margin: 10px 0 24px;
-  padding: var(--space-5);
-  background: rgba(20, 15, 45, 0.6);
-  backdrop-filter: blur(15px);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
+/* ==============================================================
+   CARD CONTAINER (the main “Upload & Check” block)
+   ============================================================== */
+.cp-card {
+  border-radius: var(--cp-radius-lg);
+  background: var(--cp-bg);
+  border: 1px solid var(--cp-border);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--cp-shadow-lg);
+  padding: 22px;
   position: relative;
   overflow: hidden;
 }
 
-.cp-filter::before {
-  content: '';
+.cp-card::before {
+  content: "";
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, transparent 70%);
-  border-radius: 50%;
-  filter: blur(80px);
+  inset: 0;
   pointer-events: none;
+  border-radius: var(--cp-radius-lg);
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(6,182,212,0.55),
+    rgba(139,92,246,0.55),
+    rgba(255,79,216,0.18)
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.35;
+}
+
+.cp-card-head {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.cp-title {
+  margin: 0;
+  font-size: clamp(22px, 2.1vw, 32px);
+  font-weight: 950;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #ffffff 0%, rgba(6,182,212,0.95) 45%, rgba(139,92,246,0.95) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ==============================================================
+   STEPPER (Step 1/2/3)
+   ============================================================== */
+.cp-stepper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--cp-muted);
+  font-weight: 800;
+}
+
+.cp-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 92, 246, 0.18);
+  background: rgba(25, 16, 63, 0.25);
+  backdrop-filter: blur(14px);
+}
+
+.cp-step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 0.9rem;
+  color: white;
+  background: rgba(183, 198, 230, 0.16);
+  border: 1px solid rgba(183, 198, 230, 0.18);
+}
+
+.cp-step-label {
+  font-size: 0.92rem;
+}
+
+.cp-step-label span {
+  font-weight: 900;
+  color: rgba(238, 244, 255, 0.95);
+}
+
+.cp-step-line {
+  flex: 1 1 60px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(139,92,246,0.25), rgba(6,182,212,0.25));
+  opacity: 0.9;
+  border-radius: 999px;
+}
+
+.cp-step.active {
+  border-color: rgba(6, 182, 212, 0.65);
+  background: linear-gradient(135deg, rgba(6,182,212,0.18), rgba(139,92,246,0.16));
+  box-shadow: 0 16px 55px rgba(6, 182, 212, 0.12);
+}
+
+.cp-step.active .cp-step-num {
+  background: linear-gradient(135deg, rgba(6,182,212,0.95), rgba(139,92,246,0.95));
+  border: none;
+}
+
+.cp-step.done {
+  border-color: rgba(16, 185, 129, 0.55);
+}
+
+.cp-step.done .cp-step-num {
+  background: linear-gradient(135deg, rgba(16,185,129,0.95), rgba(6,182,212,0.75));
+  border: none;
+}
+
+/* ==============================================================
+   FORM GRID (like screenshot)
+   ============================================================== */
+.cp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 16px;
+  margin-top: 10px;
+}
+
+.cp-span-2 {
+  grid-column: span 2;
 }
 
 .cp-field {
@@ -152,258 +174,290 @@
   gap: 8px;
 }
 
-.cp-select-course {
-  min-width: 280px;
+.cp-label {
+  font-weight: 850;
+  color: rgba(183, 198, 230, 0.95);
+  letter-spacing: 0.2px;
 }
 
-.cp-select-section {
-  min-width: 240px;
+.cp-select,
+.cp-input,
+.cp-textarea {
+  width: 100%;
+  background: rgba(25, 16, 63, 0.40);
+  backdrop-filter: blur(14px);
+  color: var(--cp-ink);
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  border-radius: 14px;
+  padding: 12px 14px;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  font-size: 0.95rem;
 }
 
-.cp-select-name {
-  min-width: 220px;
+.cp-select:focus,
+.cp-input:focus,
+.cp-textarea:focus {
+  outline: none;
+  border-color: rgba(6, 182, 212, 0.75);
+  box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.14), 0 18px 60px rgba(6, 182, 212, 0.10);
+  background: rgba(25, 16, 63, 0.55);
+  transform: translateY(-1px);
 }
 
-.cp-input-name {
-  min-width: 260px;
+.cp-input::placeholder,
+.cp-textarea::placeholder {
+  color: rgba(183, 198, 230, 0.55);
 }
 
-/* ========================================
-   SINGLE ROW (OCR ENGINE)
-======================================== */
-.cp-row {
-  display: flex;
-  align-items: center;
+.cp-textarea {
+  margin-top: 14px;
+  min-height: 120px;
+  line-height: 1.6;
+}
+
+/* ==============================================================
+   ADVANCED BLOCK
+   ============================================================== */
+.cp-advanced {
+  margin-top: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(139, 92, 246, 0.18);
+  background: rgba(18, 12, 44, 0.38);
+  backdrop-filter: blur(14px);
+  padding: 12px 14px;
+}
+
+.cp-advanced-summary {
+  cursor: pointer;
+  font-weight: 950;
+  color: rgba(238, 244, 255, 0.92);
+  list-style: none;
+}
+
+.cp-advanced-summary::-webkit-details-marker {
+  display: none;
+}
+
+.cp-advanced-summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 10px;
+  color: rgba(6,182,212,0.95);
+  filter: drop-shadow(0 0 6px rgba(6,182,212,0.35));
+  transition: transform 0.25s ease;
+}
+
+.cp-advanced[open] .cp-advanced-summary::before {
+  transform: rotate(90deg);
+}
+
+.cp-advanced-body {
+  margin-top: 12px;
+  display: grid;
   gap: 14px;
-  margin: 12px 0 20px;
-  padding: var(--space-4);
-  background: rgba(20, 15, 45, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
-  transition: all 0.3s ease;
 }
 
-.cp-row:hover {
-  border-color: var(--border-hover);
-  box-shadow: 0 8px 22px rgba(6, 182, 212, 0.25);
-}
-
-/* ========================================
-   OPTIONS GRID
-======================================== */
-.cp-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
+.cp-advanced-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
   align-items: end;
-  margin: 12px 0 16px;
 }
 
 .cp-checkbox {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-weight: 800;
-  color: var(--ink);
+  font-weight: 900;
+  color: var(--cp-ink);
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .cp-checkbox input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
-  accent-color: var(--accent-cyan);
+  accent-color: rgba(6,182,212,0.95);
 }
 
-/* ========================================
-   BUTTONS - ENHANCED
-======================================== */
-.btn {
-  padding: 12px 20px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: rgba(26, 18, 64, 0.4);
-  backdrop-filter: blur(10px);
-  color: var(--ink);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 700;
-  font-size: 0.95rem;
+.cp-rubric {
+  margin-top: 6px;
 }
 
-.btn:hover {
-  transform: translateY(-2px);
-  background: rgba(26, 18, 64, 0.6);
-  border-color: var(--border-hover);
-  box-shadow: 0 8px 20px rgba(6, 182, 212, 0.3);
+/* ==============================================================
+   UPLOAD BOX (like screenshot)
+   ============================================================== */
+.cp-upload-wrap {
+  margin-top: 16px;
+  display: grid;
+  gap: 10px;
 }
 
-.btn:focus-visible {
-  outline: 3px solid var(--ring);
-  outline-offset: 2px;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  border: none;
-  color: #1a1a1a;
-  font-weight: 900;
-  box-shadow: 0 6px 25px rgba(255, 209, 102, 0.4);
+.cp-upload-box {
+  border-radius: 18px;
+  border: 1px dashed rgba(183, 198, 230, 0.28);
+  background: rgba(25, 16, 63, 0.22);
+  backdrop-filter: blur(14px);
+  padding: 16px;
   position: relative;
   overflow: hidden;
 }
 
-.btn-primary::before {
-  content: '';
+.cp-upload-box::before {
+  content: "";
   position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.5s ease;
+  inset: -40%;
+  background: radial-gradient(circle, rgba(6,182,212,0.14), transparent 55%);
+  filter: blur(40px);
+  opacity: 0.7;
+  pointer-events: none;
 }
 
-.btn-primary:hover::before {
-  left: 100%;
+.cp-upload-title {
+  font-weight: 950;
+  font-size: 1.02rem;
+  color: rgba(238, 244, 255, 0.95);
 }
 
-.btn-primary:hover {
-  box-shadow: 0 8px 30px rgba(255, 209, 102, 0.5);
+.cp-upload-sub {
+  margin-top: 4px;
+  color: rgba(183, 198, 230, 0.75);
+  font-weight: 700;
+  font-size: 0.92rem;
 }
 
-.btn-secondary {
-  background: rgba(26, 18, 64, 0.4);
-  backdrop-filter: blur(10px);
-  color: var(--ink);
+.cp-upload-inner {
+  margin-top: 12px;
 }
 
-.btn-dark {
-  background: linear-gradient(135deg, #1e293b, #0f172a);
-  color: #fff;
-  border: none;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-}
-
-.btn-success {
-  background: linear-gradient(135deg, var(--success), #0ea371);
-  color: #fff;
-  border: none;
-  font-weight: 800;
-  box-shadow: 0 6px 22px rgba(16, 185, 129, 0.4);
-}
-
-.btn-success:hover {
-  box-shadow: 0 8px 28px rgba(16, 185, 129, 0.5);
-}
-
-/* ========================================
-   ACTIONS ROW
-======================================== */
+/* ==============================================================
+   ACTION BUTTONS (Start Checking)
+   ============================================================== */
 .cp-actions {
+  margin-top: 16px;
   display: flex;
-  gap: 14px;
+  gap: 12px;
   flex-wrap: wrap;
-  margin-top: 10px;
+  align-items: center;
+  justify-content: center;
 }
 
+.cp-btn {
+  padding: 12px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 950;
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  background: rgba(25, 16, 63, 0.35);
+  backdrop-filter: blur(14px);
+  color: var(--cp-ink);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.cp-btn:hover {
+  transform: translateY(-2px);
+  border-color: rgba(6, 182, 212, 0.55);
+  box-shadow: 0 18px 60px rgba(6, 182, 212, 0.12);
+}
+
+.cp-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.cp-btn-primary {
+  border: none;
+  color: #ffffff;
+  background: linear-gradient(135deg, rgba(6,182,212,0.95), rgba(139,92,246,0.95), rgba(255,79,216,0.55));
+  box-shadow: 0 18px 70px rgba(139, 92, 246, 0.14);
+  min-width: 220px;
+}
+
+.cp-btn-secondary {
+  border: 1px solid rgba(183, 198, 230, 0.20);
+}
+
+.cp-btn-ghost {
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(25, 16, 63, 0.25);
+  border: 1px solid rgba(139, 92, 246, 0.20);
+  color: rgba(238, 244, 255, 0.92);
+  font-weight: 900;
+}
+
+/* Status */
 .cp-status {
   margin-top: 14px;
-  color: var(--muted);
-  font-size: 0.95rem;
+  color: var(--cp-muted);
+  font-weight: 750;
 }
 
-/* ========================================
-   FLOW STEP CARDS - ENHANCED
-======================================== */
+/* ==============================================================
+   FLOW CARDS (kept from your file, slightly tuned)
+   ============================================================== */
 .flow-wrap {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  margin: 16px 0;
+  gap: 14px;
+  margin: 16px 0 4px;
 }
 
 .flow-card {
-  flex: 1 1 300px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 16px;
-  background: rgba(20, 15, 45, 0.6);
-  backdrop-filter: blur(10px);
-  box-shadow: var(--shadow-sm);
-  color: var(--ink);
-  transition: all 0.4s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.flow-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1));
-  opacity: 0;
-  transition: opacity 0.4s ease;
+  flex: 1 1 280px;
+  border: 1px solid rgba(139, 92, 246, 0.18);
+  border-radius: 16px;
+  padding: 14px 14px;
+  background: rgba(25, 16, 63, 0.22);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--cp-shadow-sm);
+  color: var(--cp-ink);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .flow-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 30px rgba(6, 182, 212, 0.3);
-}
-
-.flow-card:hover::before {
-  opacity: 1;
+  transform: translateY(-2px);
+  border-color: rgba(6, 182, 212, 0.45);
+  box-shadow: 0 18px 60px rgba(6, 182, 212, 0.10);
 }
 
 .flow-card.active {
-  border-color: var(--accent-cyan);
-  box-shadow: 0 10px 30px rgba(6, 182, 212, 0.4);
-}
-
-.flow-card.active::before {
-  opacity: 1;
+  border-color: rgba(6, 182, 212, 0.70);
 }
 
 .flow-card.done {
-  border-color: var(--success);
-  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+  border-color: rgba(16, 185, 129, 0.55);
 }
 
 .flow-card.error {
-  border-color: var(--danger);
-  box-shadow: 0 8px 24px rgba(255, 118, 118, 0.3);
+  border-color: rgba(255, 107, 107, 0.55);
 }
 
 .flow-header {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 12px;
-  position: relative;
-  z-index: 1;
+  margin-bottom: 10px;
 }
 
 .dot {
   width: 12px;
   height: 12px;
   border-radius: 999px;
-  background: #64748b;
-  box-shadow: 0 2px 8px rgba(100, 116, 139, 0.3);
+  background: rgba(183, 198, 230, 0.30);
 }
 
 .dot.ok {
-  background: var(--success);
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+  background: rgba(16,185,129,0.95);
+  box-shadow: 0 0 14px rgba(16,185,129,0.35);
 }
 
 .dot.bad {
-  background: var(--danger);
-  box-shadow: 0 0 12px rgba(255, 118, 118, 0.6);
+  background: rgba(255,107,107,0.95);
+  box-shadow: 0 0 14px rgba(255,107,107,0.35);
 }
 
 .dot.pulse {
@@ -411,21 +465,15 @@
 }
 
 @keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(6, 182, 212, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0);
-  }
+  0% { box-shadow: 0 0 0 0 rgba(6,182,212,0.55); }
+  70% { box-shadow: 0 0 0 10px rgba(6,182,212,0); }
+  100% { box-shadow: 0 0 0 0 rgba(6,182,212,0); }
 }
 
 .loader-line {
   position: relative;
   height: 8px;
-  background: rgba(51, 65, 85, 0.3);
+  background: rgba(183, 198, 230, 0.14);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -435,9 +483,8 @@
   left: -40%;
   width: 40%;
   height: 100%;
-  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
-  animation: slide 1.3s linear infinite;
-  box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+  background: linear-gradient(90deg, rgba(6,182,212,0.95), rgba(139,92,246,0.95));
+  animation: slide 1.25s linear infinite;
 }
 
 @keyframes slide {
@@ -457,29 +504,17 @@
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: var(--accent-cyan);
-  opacity: 0.5;
+  background: rgba(6,182,212,0.95);
+  opacity: 0.55;
   animation: bounce 1.3s infinite;
-  box-shadow: 0 0 8px rgba(6, 182, 212, 0.4);
 }
 
-.typing span:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.typing span:nth-child(3) {
-  animation-delay: 0.4s;
-}
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
 
 @keyframes bounce {
-  0%, 80%, 100% {
-    transform: translateY(0);
-    opacity: 0.5;
-  }
-  40% {
-    transform: translateY(-8px);
-    opacity: 1;
-  }
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.55; }
+  40% { transform: translateY(-8px); opacity: 1; }
 }
 
 .done-badge,
@@ -489,40 +524,46 @@
   border-radius: 999px;
   font-size: 0.8rem;
   color: #fff;
-  font-weight: 800;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  font-weight: 950;
 }
 
-.done-badge {
-  background: linear-gradient(135deg, var(--success), #0ea371);
+.done-badge { background: linear-gradient(135deg, rgba(16,185,129,0.95), rgba(6,182,212,0.65)); }
+.error-badge { background: linear-gradient(135deg, rgba(255,107,107,0.95), rgba(255,79,216,0.65)); }
+
+/* ==============================================================
+   REVIEW CARD
+   ============================================================== */
+.cp-card-review {
+  margin-top: 18px;
 }
 
-.error-badge {
-  background: linear-gradient(135deg, var(--danger), #ff5252);
-}
-
-/* ========================================
-   GRADING RESULTS
-======================================== */
-.grading-result {
-  margin-top: 20px;
-}
-
-.gr-wrap {
-  margin-top: 12px;
-}
-
-.gr-actions {
+.cp-review-head {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.cp-review-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 950;
+  color: rgba(238, 244, 255, 0.95);
+}
+
+.cp-review-actions {
+  display: flex;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
-/* ========================================
-   PRETTY RESULTS (SHARED)
-======================================== */
+/* ==============================================================
+   PRETTY RESULTS (your existing classes retained)
+   ============================================================== */
 .pr-muted {
-  color: var(--muted);
+  color: var(--cp-muted);
 }
 
 .pr-grid {
@@ -531,19 +572,13 @@
 }
 
 .pr-card {
-  border: 1px solid var(--border);
-  border-radius: 14px;
+  border: 1px solid rgba(139, 92, 246, 0.18);
+  border-radius: 16px;
   padding: 16px;
-  background: rgba(20, 15, 45, 0.6);
-  backdrop-filter: blur(10px);
-  color: var(--ink);
-  box-shadow: var(--shadow-sm);
-  transition: all 0.3s ease;
-}
-
-.pr-card:hover {
-  border-color: var(--border-hover);
-  box-shadow: 0 10px 30px rgba(6, 182, 212, 0.25);
+  background: rgba(25, 16, 63, 0.22);
+  backdrop-filter: blur(14px);
+  color: var(--cp-ink);
+  box-shadow: var(--cp-shadow-sm);
 }
 
 .pr-header {
@@ -552,22 +587,22 @@
   flex-wrap: wrap;
   align-items: baseline;
   padding-bottom: 12px;
-  border-bottom: 1px dashed rgba(139, 92, 246, 0.3);
+  border-bottom: 1px dashed rgba(139, 92, 246, 0.28);
 }
 
 .pr-student {
-  font-weight: 800;
+  font-weight: 950;
   font-size: 1.05rem;
 }
 
 .pr-roll {
-  color: var(--muted);
+  color: var(--cp-muted);
 }
 
 .pr-score {
   margin-left: auto;
-  font-weight: 900;
-  color: var(--accent-cyan);
+  font-weight: 950;
+  color: rgba(6,182,212,0.95);
   font-size: 1.1rem;
 }
 
@@ -584,19 +619,18 @@
 .pr-th, .pr-td {
   text-align: left;
   padding: 10px 12px;
-  color: var(--ink);
+  color: var(--cp-ink);
 }
 
 .pr-th {
-  border-bottom: 1px solid var(--border);
-  background: rgba(26, 18, 64, 0.5);
-  backdrop-filter: blur(10px);
-  font-weight: 900;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.22);
+  background: rgba(25, 16, 63, 0.30);
+  font-weight: 950;
   font-size: 0.9rem;
 }
 
 .pr-td {
-  border-bottom: 1px solid rgba(139, 92, 246, 0.15);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.12);
 }
 
 .pr-feedback {
@@ -606,17 +640,15 @@
 
 .pr-overall {
   margin-top: 12px;
-  background: linear-gradient(135deg, rgba(255, 209, 102, 0.15), rgba(255, 191, 0, 0.1));
-  border: 1px solid rgba(255, 209, 102, 0.3);
-  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(6,182,212,0.10), rgba(139,92,246,0.10));
+  border: 1px solid rgba(6,182,212,0.22);
+  border-radius: 12px;
   padding: 12px;
-  backdrop-filter: blur(10px);
 }
 
 .pr-overall-text {
   margin-top: 6px;
   white-space: pre-wrap;
-  color: var(--ink);
   line-height: 1.6;
 }
 
@@ -626,7 +658,7 @@
 
 .pr-details > summary {
   cursor: pointer;
-  font-weight: 900;
+  font-weight: 950;
   position: relative;
   padding-left: 28px;
 }
@@ -636,9 +668,8 @@
   position: absolute;
   left: 6px;
   top: 0;
-  color: var(--accent-cyan);
-  transition: transform 0.3s ease;
-  filter: drop-shadow(0 0 4px rgba(6, 182, 212, 0.5));
+  color: rgba(6,182,212,0.95);
+  transition: transform 0.25s ease;
 }
 
 .pr-details[open] > summary::before {
@@ -648,18 +679,18 @@
 .pr-pre {
   white-space: pre-wrap;
   margin-top: 12px;
-  background: rgba(11, 18, 32, 0.8);
+  background: rgba(7, 5, 26, 0.70);
   color: #e5e7eb;
   border-radius: 12px;
-  border: 1px solid rgba(15, 27, 51, 0.5);
+  border: 1px solid rgba(139, 92, 246, 0.18);
   padding: 14px;
-  font-family: 'Courier New', monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
   line-height: 1.6;
 }
 
-/* ========================================
-   PREVIEW MODAL - ENHANCED
-======================================== */
+/* ==============================================================
+   PREVIEW MODAL (kept compatible with your modal buttons)
+   ============================================================== */
 .preview-modal {
   position: fixed;
   inset: 0;
@@ -667,39 +698,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(10, 5, 32, 0.85);
-  backdrop-filter: blur(12px);
+  background: rgba(7, 5, 26, 0.72);
+  backdrop-filter: blur(14px);
   padding: clamp(12px, 3vw, 32px);
-  animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 
 .preview-card {
   width: min(1100px, 95vw);
   height: min(90vh, 950px);
-  background: rgba(20, 15, 45, 0.95);
-  backdrop-filter: blur(20px);
-  color: var(--ink);
-  border: 1px solid var(--border);
-  border-radius: 18px;
+  background: rgba(18, 12, 44, 0.78);
+  backdrop-filter: blur(18px);
+  color: var(--cp-ink);
+  border: 1px solid rgba(139, 92, 246, 0.26);
+  border-radius: 22px;
   overflow: hidden;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), 0 0 60px rgba(139, 92, 246, 0.2);
-  animation: elevate 0.35s ease-out both;
-}
-
-@keyframes elevate {
-  from {
-    transform: translateY(20px) scale(0.96);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
+  box-shadow: 0 30px 90px rgba(0,0,0,0.65);
 }
 
 .preview-head {
@@ -707,9 +720,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  background: rgba(26, 18, 64, 0.6);
-  backdrop-filter: blur(15px);
-  border-bottom: 1px solid var(--border);
+  background: rgba(25, 16, 63, 0.42);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.20);
 }
 
 .preview-actions {
@@ -720,69 +732,68 @@
 .preview-body {
   width: 100%;
   height: calc(100% - 54px);
-  background: var(--card);
 }
 
 .preview-body iframe {
   width: 100%;
   height: 100%;
   border: 0;
-  background: var(--card);
 }
 
-/* ========================================
-   RESPONSIVE DESIGN
-======================================== */
-@media (max-width: 860px) {
-  .cp-select-course {
-    min-width: 240px;
-  }
-  
-  .cp-select-section {
-    min-width: 220px;
-  }
-  
-  .flow-card {
-    flex: 1 1 280px;
+/* Keep your original .btn styles for modal buttons */
+.btn {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  background: rgba(25, 16, 63, 0.35);
+  color: var(--cp-ink);
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.btn-primary {
+  border: none;
+  background: linear-gradient(135deg, rgba(6,182,212,0.95), rgba(139,92,246,0.95));
+  color: white;
+}
+
+.btn-secondary {
+  background: rgba(25, 16, 63, 0.25);
+}
+
+/* ==============================================================
+   RESPONSIVE
+   ============================================================== */
+@media (max-width: 980px) {
+  .cp-advanced-grid {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
-@media (max-width: 640px) {
-  .cp-field {
-    min-width: unset;
+@media (max-width: 780px) {
+  .cp-grid {
+    grid-template-columns: 1fr;
   }
-  
-  .cp-select-course {
-    min-width: 220px;
+  .cp-span-2 {
+    grid-column: span 1;
   }
-  
-  .cp-select-section {
-    min-width: 200px;
+  .cp-step-line {
+    display: none;
   }
-  
-  .cp-input-name {
-    min-width: 220px;
+  .cp-stepper {
+    gap: 10px;
   }
-  
+}
+
+@media (max-width: 560px) {
+  .cp-advanced-grid {
+    grid-template-columns: 1fr;
+  }
   .cp-actions {
-    gap: 12px;
+    justify-content: stretch;
   }
-  
-  .flow-card {
-    flex: 1 1 100%;
-  }
-  
-  .panel > h2 {
-    font-size: 24px;
-  }
-}
-
-@media (max-width: 480px) {
-  .cp-filter {
-    padding: var(--space-4);
-  }
-  
-  .cp-row {
-    padding: var(--space-3);
+  .cp-btn,
+  .cp-btn-primary {
+    width: 100%;
   }
 }

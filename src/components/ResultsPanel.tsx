@@ -9,7 +9,7 @@ import {
   downloadSBAW
 } from "../utils/actions";
 import { createClient } from "@supabase/supabase-js";
-import "../results.css"; // <-- new styles (no inline CSS)
+import "../results.css";
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL!,
@@ -55,11 +55,10 @@ function PrettyResults({ raw }: { raw: any }) {
     // not JSON
   }
 
-  if (!data) {
-    return <div className="pr-muted">No structured results available.</div>;
-  }
+  if (!data) return <div className="pr-muted">No structured results available.</div>;
 
   const items = Array.isArray(data) ? data : (Array.isArray(data?.students) ? data.students : null);
+
   if (!Array.isArray(items)) {
     return (
       <div>
@@ -77,15 +76,9 @@ function PrettyResults({ raw }: { raw: any }) {
       {items.map((s: any, idx: number) => (
         <div key={idx} className="pr-card">
           <div className="pr-header">
-            <strong className="pr-student">
-              {s.student_name || "Unknown Student"}
-            </strong>
-            <span className="pr-roll">
-              {s.roll_number ? `(${s.roll_number})` : ""}
-            </span>
-            <span className="pr-score">
-              Score: {(s.total_score ?? 0)} / {(s.max_score ?? 0)}
-            </span>
+            <strong className="pr-student">{s.student_name || "Unknown Student"}</strong>
+            <span className="pr-roll">{s.roll_number ? `(${s.roll_number})` : ""}</span>
+            <span className="pr-score">Score: {(s.total_score ?? 0)} / {(s.max_score ?? 0)}</span>
           </div>
 
           {Array.isArray(s.questions) && s.questions.length > 0 && (
@@ -137,7 +130,7 @@ function PrettyResults({ raw }: { raw: any }) {
 
       <details className="pr-details">
         <summary>Raw JSON</summary>
-        <pre className="pr-pre">{JSON.stringify(data, null, 2)}</pre>
+        <pre className="pr-pre">{JSON.stringify(items, null, 2)}</pre>
       </details>
     </div>
   );
@@ -146,11 +139,11 @@ function PrettyResults({ raw }: { raw: any }) {
 type Course = { id: string; name: string };
 type Section = { id: string; name: string; course_id: string };
 
-/* ---- CircularLoader: SVG ring with determinate/indeterminate modes ---- */
+/* ---- CircularLoader ---- */
 type CircularLoaderProps = {
-  size?: number;          // px
-  stroke?: number;        // ring thickness
-  value?: number | null;  // 0–100 for determinate; null/undefined => indeterminate
+  size?: number;
+  stroke?: number;
+  value?: number | null;
   label?: React.ReactNode;
   className?: string;
 };
@@ -178,13 +171,7 @@ const CircularLoader: React.FC<CircularLoaderProps> = ({
       aria-valuemax={100}
       {...(determinate ? { "aria-valuenow": Math.round(value!) } : {})}
     >
-      <svg
-        className="clr-svg"
-        width={s}
-        height={s}
-        viewBox={`0 0 ${s} ${s}`}
-        aria-hidden="true"
-      >
+      <svg className="clr-svg" width={s} height={s} viewBox={`0 0 ${s} ${s}`} aria-hidden="true">
         <circle className="clr-track" cx={s / 2} cy={s / 2} r={r} strokeWidth={stroke} fill="none" />
         <circle
           className="clr-ring"
@@ -204,16 +191,10 @@ const CircularLoader: React.FC<CircularLoaderProps> = ({
   );
 };
 
-/* ---------------- Small helper: stream download with progress for public PDFs ---------------- */
-async function downloadWithProgress(
-  url: string,
-  filename: string,
-  onProgress: (pct: number) => void
-) {
+/* ---------------- Download with progress ---------------- */
+async function downloadWithProgress(url: string, filename: string, onProgress: (pct: number) => void) {
   const res = await fetch(url);
-  if (!res.ok || !res.body) {
-    throw new Error(`Download failed (${res.status})`);
-  }
+  if (!res.ok || !res.body) throw new Error(`Download failed (${res.status})`);
 
   const contentLength = Number(res.headers.get("Content-Length") || 0);
   const reader = res.body.getReader();
@@ -226,9 +207,7 @@ async function downloadWithProgress(
     if (value) {
       chunks.push(value);
       received += value.length;
-      if (contentLength > 0) {
-        onProgress(Math.round((received / contentLength) * 100));
-      }
+      if (contentLength > 0) onProgress(Math.round((received / contentLength) * 100));
     }
   }
 
@@ -244,11 +223,11 @@ async function downloadWithProgress(
 
 const ResultsPanel: React.FC<Props> = (props) => {
   const {
-    quizzes, loading, packLinks, setPackLinks,
+    quizzes, loading, setPackLinks,
     gradingMode, setGradingMode, gradingProvider, setGradingProvider,
     leniency, setLeniency, useSolutionKey, setUseSolutionKey,
     totalQuestions, setTotalQuestions, rubricRows, setRubricRows, rubricPayload,
-    customPrompt, setCustomPrompt, gradingResult, setGradingResult, refetch
+    customPrompt, setCustomPrompt, setGradingResult, refetch
   } = props;
 
   // ---- download state (per-quiz) ----
@@ -276,7 +255,7 @@ const ResultsPanel: React.FC<Props> = (props) => {
     setDownloadPct(0);
   };
 
-  // ---- course/section picker (loads for the signed-in teacher) ----
+  // ---- course/section picker ----
   const [teacherId, setTeacherId] = useState<string | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
@@ -295,6 +274,7 @@ const ResultsPanel: React.FC<Props> = (props) => {
         .select("id,name")
         .eq("teacher_id", uid)
         .order("name", { ascending: true });
+
       setCourses((crs || []) as Course[]);
     })();
   }, []);
@@ -311,45 +291,42 @@ const ResultsPanel: React.FC<Props> = (props) => {
         .select("id,name,course_id")
         .eq("course_id", selectedCourseId)
         .order("name", { ascending: true });
+
       setSections((secs || []) as Section[]);
     })();
   }, [selectedCourseId]);
 
-  const selectedSectionName =
-    (sections.find(s => s.id === selectedSectionId)?.name || "").trim();
+  const selectedSectionName = (sections.find(s => s.id === selectedSectionId)?.name || "").trim();
 
+  // ✅ FIXED: course/section filtering (no "|| true")
   const filteredQuizzes = useMemo(() => {
     let list = quizzes || [];
 
     if (selectedCourseId) {
-      list = list.filter(q =>
-        (q as any).course_id === selectedCourseId ||
-        (q as any).courseId === selectedCourseId ||
-        true
-      );
+      list = list.filter(q => {
+        const cid = (q as any).course_id ?? (q as any).courseId ?? null;
+        return !cid || cid === selectedCourseId; // keep old rows that don't have course assigned
+      });
     }
 
     if (selectedSectionId) {
-      list = list.filter(q =>
-        (q as any).section_id === selectedSectionId ||
-        (q as any).sectionId === selectedSectionId ||
-        (q as any).section === selectedSectionName
-      );
+      list = list.filter(q => {
+        const sid = (q as any).section_id ?? (q as any).sectionId ?? null;
+        const sname = ((q as any).section || "").trim();
+        return (!sid && !sname) || sid === selectedSectionId || sname === selectedSectionName;
+      });
     }
 
     return list;
   }, [quizzes, selectedCourseId, selectedSectionId, selectedSectionName]);
 
-  // Minimal “delete quiz”
   const handleDelete = async (quizId: string, displayName: string) => {
     const ok = window.confirm(`Delete quiz "${displayName}"? This will remove its row from the quizzes table.`);
     if (!ok) return;
 
     const { error } = await supabase.from("quizzes").delete().eq("id", quizId);
-    if (error) {
-      alert(`Delete failed: ${error.message}`);
-      return;
-    }
+    if (error) return alert(`Delete failed: ${error.message}`);
+
     await refetch();
   };
 
@@ -357,7 +334,6 @@ const ResultsPanel: React.FC<Props> = (props) => {
     <div className="panel">
       <h2 className="rp-title">Past Quiz Reports</h2>
 
-      {/* Teacher Course → Section picker */}
       <div className="rp-filter">
         <div className="rp-filter-group">
           <label className="rp-label">Course:</label>
@@ -402,29 +378,30 @@ const ResultsPanel: React.FC<Props> = (props) => {
               ? `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/graded/${q.graded_pdf}`
               : null;
 
+            const links: Array<{ label: string; url: string; filename: string; kind: "orig" | "graded" }> = [];
+            if (originalUrl) links.push({ label: "Original PDF", url: originalUrl, filename: (q.title ? `${q.title}_original.pdf` : `original_${q.id}.pdf`), kind: "orig" });
+            if (gradedUrl) links.push({ label: "✅ Graded PDF", url: gradedUrl, filename: (q.title ? `${q.title}_graded.pdf` : `graded_${q.id}.pdf`), kind: "graded" });
+
             return (
               <li key={q.id} className="quiz-card">
                 <div className="quiz-header">
-                  {/* <strong>🧾 Quiz ID:</strong> {q.id} */}
-                  {/* <span> | {new Date(q.created_at).toLocaleString()}</span> */}
-                  {q.title ? <span> | <strong>Title:</strong> {q.title}</span> : null}
-                  {q.section ? <span> | <strong>Section:</strong> {q.section}</span> : null}
+                  {q.title ? <span><strong>Title:</strong> {q.title}</span> : <span><strong>Quiz:</strong> {q.id}</span>}
+                  {q.section ? <span className="quiz-chip"><strong>Section:</strong> {q.section}</span> : null}
+                  {q.created_at ? <span className="quiz-date">{new Date(q.created_at).toLocaleString()}</span> : null}
                 </div>
 
                 <div className="quiz-links">
-                  {originalUrl && (
+                  {links.length ? links.map((l) => (
                     <a
-                      href={originalUrl}
+                      key={l.kind}
+                      href={l.url}
                       target="_blank"
+                      rel="noreferrer"
                       onClick={async (e) => {
                         e.preventDefault();
                         try {
-                          startDeterminate(q.id, "Downloading original PDF…");
-                          await downloadWithProgress(
-                            originalUrl,
-                            (q.title ? `${q.title}_original.pdf` : `original_${q.id}.pdf`),
-                            (pct) => setDownloadPct(pct)
-                          );
+                          startDeterminate(q.id, l.kind === "orig" ? "Downloading original PDF…" : "Downloading ✅ graded PDF…");
+                          await downloadWithProgress(l.url, l.filename, (pct) => setDownloadPct(pct));
                         } catch (err: any) {
                           alert(err?.message || "Failed to download.");
                         } finally {
@@ -432,46 +409,18 @@ const ResultsPanel: React.FC<Props> = (props) => {
                         }
                       }}
                     >
-                      Original PDF
+                      {l.label}
                     </a>
-                  )}{" "}
-                  |{" "}
-                  {gradedUrl && (
-                    <a
-                      href={gradedUrl}
-                      target="_blank"
-                      onClick={async (e) => {
-                        e.preventDefault();
-                        try {
-                          startDeterminate(q.id, "Downloading ✅ graded PDF…");
-                          await downloadWithProgress(
-                            gradedUrl,
-                            (q.title ? `${q.title}_graded.pdf` : `graded_${q.id}.pdf`),
-                            (pct) => setDownloadPct(pct)
-                          );
-                        } catch (err: any) {
-                          alert(err?.message || "Failed to download.");
-                        } finally {
-                          finishDownload();
-                        }
-                      }}
-                    >
-                      ✅ Graded PDF
-                    </a>
-                  )}
+                  )) : <div className="rp-empty-mini">No PDFs uploaded yet.</div>}
                 </div>
 
-                {/* Circular loader under the links */}
                 {downloadingQuizId === q.id && (
-                  <div className="rp-loading">
-                    <CircularLoader
-                      value={indeterminate ? null : downloadPct}
-                      label={downloadLabel}
-                    />
+                  <div className="rp-download">
+                    <CircularLoader value={indeterminate ? null : downloadPct} label={downloadLabel} />
                   </div>
                 )}
 
-                {q.formatted_text || q.graded_json ? (
+                {q.formatted_text || (q as any).graded_json ? (
                   <details className="text-details">
                     <summary>📊 View AI Grading Result</summary>
                     <div className="pr-wrap">
@@ -483,13 +432,13 @@ const ResultsPanel: React.FC<Props> = (props) => {
                     <summary>📑 View Extracted OCR Text</summary>
                     <pre className="rp-pre">{q.extracted_text}</pre>
                   </details>
-                ) : <p className="rp-empty">❌ No results yet</p>}
+                ) : (
+                  <p className="rp-empty">❌ No results yet</p>
+                )}
 
-                {/* Quick actions */}
                 <div className="rp-actions">
                   <button className="btn" onClick={() => exportCsv(q.id, quizzes, refetch)}>📤 Export CSV</button>
 
-                  {/* Build pack with indeterminate loader */}
                   <button
                     className="btn"
                     onClick={async () => {
@@ -512,7 +461,6 @@ const ResultsPanel: React.FC<Props> = (props) => {
                     🖍️ Build Graded PDFs Pack
                   </button>
 
-                  {/* SBAW / SWAB download: indeterminate */}
                   <button
                     className="btn"
                     onClick={async () => {
@@ -530,15 +478,11 @@ const ResultsPanel: React.FC<Props> = (props) => {
                   </button>
 
                   <span className="spacer" />
-                  <button
-                    className="btn btn-danger"
-                    onClick={() => handleDelete(q.id, q.title || `quiz_${q.id}`)}
-                  >
+                  <button className="btn btn-danger" onClick={() => handleDelete(q.id, q.title || `quiz_${q.id}`)}>
                     🗑️ Delete Quiz
                   </button>
                 </div>
 
-                {/* Rerun grading controls */}
                 <div className="grading-controls">
                   <h3 className="gc-title">🧠 AI Grading Options</h3>
 
@@ -580,16 +524,12 @@ const ResultsPanel: React.FC<Props> = (props) => {
                         onChange={async (e) => {
                           const checked = e.target.checked;
                           setUseSolutionKey(checked);
-                          // NEW: persist this choice to the DB for THIS quiz
                           const { error } = await supabase
                             .from("quizzes")
                             .update({ read_first_paper_is_solution: checked })
                             .eq("id", q.id);
-                          if (error) {
-                            console.warn("Failed to update read_first_paper_is_solution:", error.message);
-                          } else {
-                            await refetch();
-                          }
+                          if (error) console.warn("Failed to update read_first_paper_is_solution:", error.message);
+                          else await refetch();
                         }}
                       />
                       Treat FIRST paper as solution key
@@ -624,7 +564,7 @@ const ResultsPanel: React.FC<Props> = (props) => {
                         await analyzeQuiz(
                           q.id,
                           { gradingMode, gradingProvider, customPrompt, rubricPayload, leniency, useSolutionKey },
-                          setGradingResult,
+                          props.setGradingResult,
                           setPackLinks,
                           refetch
                         );

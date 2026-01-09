@@ -63,25 +63,27 @@ const ExcelPanel: React.FC<Props> = ({ quizzes, loading }) => {
   }, [selectedCourseId]);
 
   const selectedSectionName =
-    (sections.find(s => s.id === selectedSectionId)?.name || "").trim();
+    (sections.find((s) => s.id === selectedSectionId)?.name || "").trim();
 
   // Filter quizzes by chosen course/section.
   const filtered = useMemo(() => {
     let arr = list;
 
     if (selectedCourseId) {
-      arr = arr.filter(q =>
-        (q as any).course_id === selectedCourseId ||
-        (q as any).courseId === selectedCourseId ||
-        true
+      arr = arr.filter(
+        (q) =>
+          (q as any).course_id === selectedCourseId ||
+          (q as any).courseId === selectedCourseId ||
+          true
       );
     }
 
     if (selectedSectionId) {
-      arr = arr.filter(q =>
-        (q as any).section_id === selectedSectionId ||
-        (q as any).sectionId === selectedSectionId ||
-        (q as any).section === selectedSectionName
+      arr = arr.filter(
+        (q) =>
+          (q as any).section_id === selectedSectionId ||
+          (q as any).sectionId === selectedSectionId ||
+          (q as any).section === selectedSectionName
       );
     }
 
@@ -90,7 +92,13 @@ const ExcelPanel: React.FC<Props> = ({ quizzes, loading }) => {
 
   return (
     <div className="panel">
-      <h2 className="xp-title">Previous Results (Excel / CSV)</h2>
+      <div className="xp-head">
+        <h2 className="xp-title">Previous Results (Excel / CSV)</h2>
+        <div className="xp-badge">
+          <span className="xp-badge-dot" />
+          {loading ? "Loading…" : `${filtered.length} item${filtered.length === 1 ? "" : "s"}`}
+        </div>
+      </div>
 
       {/* Teacher Course → Section picker */}
       <div className="xp-filter">
@@ -103,8 +111,10 @@ const ExcelPanel: React.FC<Props> = ({ quizzes, loading }) => {
             disabled={!teacherId}
           >
             <option value="">— All Courses —</option>
-            {courses.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+            {courses.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
             ))}
           </select>
         </div>
@@ -120,8 +130,10 @@ const ExcelPanel: React.FC<Props> = ({ quizzes, loading }) => {
             <option value="">
               {selectedCourseId ? "— All Sections —" : "Select a course first"}
             </option>
-            {sections.map(s => (
-              <option key={s.id} value={s.id}>{s.name}</option>
+            {sections.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
             ))}
           </select>
         </div>
@@ -131,8 +143,8 @@ const ExcelPanel: React.FC<Props> = ({ quizzes, loading }) => {
 
       {!loading && filtered.length === 0 && (
         <div className="xp-empty">
-          <p>No quizzes found yet.</p>
-          <p>Upload & grade a quiz first, then come back to download the CSV.</p>
+          <p className="xp-empty-title">No quizzes found yet.</p>
+          <p className="xp-empty-sub">Upload & grade a quiz first, then come back to download the CSV.</p>
         </div>
       )}
 
@@ -141,13 +153,26 @@ const ExcelPanel: React.FC<Props> = ({ quizzes, loading }) => {
           {filtered.map((q) =>
             q.results_xls ? (
               <li key={q.id} className="xp-item">
-                <div className="xp-meta">
-                  <strong>Title:</strong> {q.title || `quiz_${q.id}`}{" "}
-                  {q.section ? (
-                    <span>
-                      {" "}| <strong>Section:</strong> {q.section}
-                    </span>
-                  ) : null}
+                <div className="xp-item-top">
+                  <div className="xp-item-titlewrap">
+                    <div className="xp-item-title">
+                      {q.title || `quiz_${q.id}`}
+                    </div>
+
+                    {q.section ? (
+                      <div className="xp-item-sub">
+                        <span className="xp-chip">Section: {q.section}</span>
+                      </div>
+                    ) : (
+                      <div className="xp-item-sub">
+                        <span className="xp-chip xp-chip-muted">No section</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="xp-item-time">
+                    {new Date(q.created_at).toLocaleString()}
+                  </div>
                 </div>
 
                 <div className="xp-actions">
@@ -185,15 +210,28 @@ const ExcelPanel: React.FC<Props> = ({ quizzes, loading }) => {
                 </div>
               </li>
             ) : (
-              <li key={q.id} className="xp-item">
-                <div className="xp-meta">
-                  <strong>Title:</strong> {q.title || `quiz_${q.id}`}{" "}
-                  {q.section ? (
-                    <span>
-                      {" "}| <strong>Section:</strong> {q.section}
-                    </span>
-                  ) : null}
+              <li key={q.id} className="xp-item xp-item-disabled">
+                <div className="xp-item-top">
+                  <div className="xp-item-titlewrap">
+                    <div className="xp-item-title">
+                      {q.title || `quiz_${q.id}`}
+                    </div>
+                    {q.section ? (
+                      <div className="xp-item-sub">
+                        <span className="xp-chip">Section: {q.section}</span>
+                      </div>
+                    ) : (
+                      <div className="xp-item-sub">
+                        <span className="xp-chip xp-chip-muted">No section</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="xp-item-time">
+                    {new Date(q.created_at).toLocaleString()}
+                  </div>
                 </div>
+
                 <div className="xp-no-file">
                   No results file — {new Date(q.created_at).toLocaleString()}
                 </div>

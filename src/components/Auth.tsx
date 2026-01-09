@@ -1,3 +1,4 @@
+// Auth.tsx
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "../lib/supabaseClient"
 import "./auth.css"
@@ -32,6 +33,12 @@ export default function Auth() {
     const type = params.get("type") || undefined
     return { access_token, refresh_token, type }
   }
+
+  // ✅ Back button behavior (always shown)
+  const handleBack = () => {
+  window.location.assign("/");
+};
+
 
   // 1) On mount, restore session from URL (supports both ?code= and #access_token=)
   useEffect(() => {
@@ -168,7 +175,6 @@ export default function Auth() {
 
     try {
       if (isRecoveryMode) {
-        // Manual fallback if needed, but normally handled automatically on SIGNED_IN
         const { data: sess } = await supabase.auth.getSession()
         if (!sess?.session) throw new Error("Auth session missing! Please click the email link again.")
         const { error } = await supabase.auth.updateUser({ password: newPassword })
@@ -180,14 +186,12 @@ export default function Auth() {
       }
 
       if (isResetRequestMode) {
-        // Collect desired new password now; store temporarily
         if (!newPassword || newPassword.length < 6) {
           throw new Error("Please enter a new password (min 6 characters).")
         }
         localStorage.setItem("pendingNewPassword", newPassword)
 
-        // IMPORTANT: redirectTo should be a whitelisted URL in Supabase Auth -> URL Configuration
-        const redirectTo = `${window.location.origin}${window.location.pathname}` // Supabase will add ?code=&type=recovery
+        const redirectTo = `${window.location.origin}${window.location.pathname}`
         const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
         if (error) throw error
         alert("Password reset link sent! Check your email to confirm.")
@@ -196,26 +200,20 @@ export default function Auth() {
       }
 
       if (isSignup) {
-        // Sign up with metadata for convenience; Supabase will store it in user metadata
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: {
-              name: teacherName,
-            },
+            data: { name: teacherName },
             emailRedirectTo: window.location.origin + window.location.pathname,
           },
         })
         if (error) throw error
 
-        // If immediate session is available (depends on your email confirmation settings),
-        // create domain rows now. If not, user will confirm by email and can be created later on first login.
         const user = data.user ?? (await supabase.auth.getUser()).data.user
         if (user) {
-          // Insert teacher row (id = auth user id), plus email & name
           const teacherPayload = {
-            id: user.id, // Important to keep consistent with auth.uid()-based designs
+            id: user.id,
             email: user.email,
             name: teacherName || null,
           }
@@ -226,11 +224,9 @@ export default function Auth() {
             .single()
 
           if (teacherErr && teacherErr.code !== "23505") {
-            // ignore unique-violation if it already exists; otherwise throw
             throw teacherErr
           }
 
-          // Insert courses and sections
           const courseInserts = courseList.map((name) => ({
             teacher_id: user.id,
             name,
@@ -247,7 +243,6 @@ export default function Auth() {
             createdCourses = insCourses || []
           }
 
-          // Build sections from per-course CSVs
           const sectionInserts: { course_id: string; name: string }[] = []
           for (const c of createdCourses) {
             const secsCsv = (courseSections[c.name] || "").trim()
@@ -288,6 +283,17 @@ export default function Auth() {
 
   return (
     <div className="auth-container">
+      {/* ✅ Back button shown for Login + Signup + Reset + Recovery */}
+      <button
+        type="button"
+        className="back-btn"
+        onClick={handleBack}
+        aria-label="Go back"
+      >
+        <span className="back-ic" aria-hidden="true">←</span>
+        Back
+      </button>
+
       <h1>
         {isRecoveryMode
           ? "Set New Password"
@@ -299,7 +305,6 @@ export default function Auth() {
       </h1>
 
       <form onSubmit={handleSubmit}>
-        {/* Email is needed for all modes except post-login operations */}
         {!isRecoveryMode && (
           <input
             type="email"
@@ -310,10 +315,6 @@ export default function Auth() {
           />
         )}
 
-        {/* Password input:
-            - Login or Sign-up uses password
-            - For 'Reset Password' request, we also ask the NEW password now
-            - Recovery mode can still show a new password input (fallback) */}
         {!isRecoveryMode && !isResetRequestMode && (
           <input
             type="password"
@@ -324,7 +325,6 @@ export default function Auth() {
           />
         )}
 
-        {/* NEW: In Reset Request mode, ask for the new password up front */}
         {isResetRequestMode && (
           <input
             type="password"
@@ -335,7 +335,6 @@ export default function Auth() {
           />
         )}
 
-        {/* Recovery mode new password field (manual fallback; auto flow uses SIGNED_IN) */}
         {isRecoveryMode && (
           <input
             type="password"
@@ -346,7 +345,6 @@ export default function Auth() {
           />
         )}
 
-        {/* Extra fields only on Sign Up */}
         {isSignup && !isRecoveryMode && (
           <>
             <input
@@ -364,7 +362,6 @@ export default function Auth() {
               rows={3}
             />
 
-            {/* Per-course sections fields */}
             {courseList.length > 0 && (
               <div style={{ width: "100%" }}>
                 <div style={{ fontWeight: 600, margin: "8px 0" }}>
@@ -401,7 +398,6 @@ export default function Auth() {
         </button>
       </form>
 
-      {/* Toggle links */}
       {!isRecoveryMode && (
         <>
           {!isSignup && !isResetRequestMode && (
